@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ff7a2f">
+  <meta name="description" content="橘光行动：AI 协防——一款可以用自然语言指挥 AI 队友的协作 FPS。">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%23f56b26'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-size='40' font-weight='800' fill='%23fff4df'%3EO%3C/text%3E%3C/svg%3E">
+  <title>橘光行动：AI 协防</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div id="app">
+    <canvas id="game-canvas" aria-label="橘光行动第一人称射击游戏画面"></canvas>
+    <div class="screen-wash" aria-hidden="true"></div>
+
+    <div id="menu-scene-label" class="menu-scene-label">
+      <span class="scene-dot"></span>
+      能源花园 · 防线实时监控
+    </div>
+
+    <section id="start-screen" class="screen start-screen">
+      <header class="landing-top">
+        <div class="wordmark">
+          <span class="wordmark-mark">O</span>
+          <span class="wordmark-copy">ORANGE<br>PROTOCOL</span>
+        </div>
+        <div class="top-meta">
+          <span class="live-pill"><i></i> 参赛原型 · 可试玩</span>
+          <button id="mute-start" class="icon-button" type="button" aria-label="切换音效">声音：开</button>
+        </div>
+      </header>
+
+      <main class="landing-grid">
+        <div class="hero">
+          <div class="kicker">
+            <span class="kicker-line"></span>
+            AI+∞ 开发者创作大赛 · 第三期
+          </div>
+          <h1>橘光<span>行动</span></h1>
+          <div class="hero-subline">
+            <strong>AI 协防</strong>
+            <span>ORANGE PROTOCOL</span>
+          </div>
+          <p class="hero-lead">
+            你不需要一个人守住核心。<br>
+            用一句话，让两名 AI 队友真正改变战局。
+          </p>
+          <div class="tag-row">
+            <span>自然语言指挥</span>
+            <span>AI 队友记忆</span>
+            <span>三波协作防线</span>
+          </div>
+          <div class="cta-row">
+            <button id="start-button" class="primary-button" type="button">
+              <span>开始行动</span>
+              <b>→</b>
+            </button>
+            <button id="intel-toggle" class="ghost-button" type="button">查看任务简报</button>
+          </div>
+          <div id="intel-drawer" class="intel-drawer" aria-hidden="true">
+            <div class="intel-item"><b>01</b><span>守住中央能源核心，撑过三波进攻。</span></div>
+            <div class="intel-item"><b>02</b><span>按 1—6 快速下令，按 T 输入自己的战术口令。</span></div>
+            <div class="intel-item"><b>03</b><span>队友会记住哪一侧漏怪，并把记忆带到下一波。</span></div>
+          </div>
+          <p class="demo-note">
+            建议使用桌面版 Chrome / Edge · 鼠标点击后进入第一人称
+          </p>
+        </div>
+
+        <aside class="mission-card">
+          <div class="mission-card-top">
+            <span>行动档案</span>
+            <b>NO. 03</b>
+          </div>
+          <div class="mission-title">
+            <span class="eyebrow">SECTOR O-09</span>
+            <h2>能源花园</h2>
+            <p>防线失守 / 等待指挥官接入</p>
+          </div>
+
+          <div class="radar-art" aria-hidden="true">
+            <div class="radar-grid"></div>
+            <div class="radar-ring ring-one"></div>
+            <div class="radar-ring ring-two"></div>
+            <div class="radar-sweep"></div>
+            <div class="radar-core"><span></span></div>
+            <i class="radar-blip blip-a"></i>
+            <i class="radar-blip blip-b"></i>
+            <i class="radar-blip blip-c"></i>
+            <div class="radar-label label-north">N</div>
+            <div class="radar-label label-core">CORE</div>
+          </div>
+
+          <div class="squad-heading">
+            <span>你的 AI 小队</span>
+            <b>2 / 2 在线</b>
+          </div>
+          <div class="landing-squad">
+            <div class="landing-ally ally-orange">
+              <div class="ally-avatar">橙</div>
+              <div class="ally-copy">
+                <strong>橙橙</strong>
+                <span>护卫 · 贴近核心拦截</span>
+              </div>
+              <i class="status-led"></i>
+            </div>
+            <div class="landing-ally ally-teal">
+              <div class="ally-avatar">闪</div>
+              <div class="ally-copy">
+                <strong>闪闪</strong>
+                <span>游击 · 侧翼制造角度</span>
+              </div>
+              <i class="status-led"></i>
+            </div>
+          </div>
+
+          <div class="control-strip">
+            <div><kbd>WASD</kbd><span>移动</span></div>
+            <div><kbd>左键</kbd><span>射击</span></div>
+            <div><kbd>1—6</kbd><span>下令</span></div>
+            <div><kbd>T</kbd><span>战术电台</span></div>
+            <div><kbd>Q</kbd><span>脉冲</span></div>
+            <div><kbd>R</kbd><span>换弹</span></div>
+          </div>
+        </aside>
+      </main>
+
+      <footer class="landing-footer">
+        <span>Three.js · 本地战术解析 · 无后端也能完整游玩</span>
+        <span>AI 只决定意图，规则系统决定行为</span>
+      </footer>
+    </section>
+
+    <section id="hud" class="hud hidden" aria-live="polite">
+      <div class="hud-top-left">
+        <div class="mini-wordmark">
+          <span class="mini-mark">O</span>
+          <div><b>橘光行动</b><span>AI 协防 / LIVE</span></div>
+        </div>
+        <div class="score-line"><span>SCORE</span><b id="score-value">0000</b></div>
+      </div>
+
+      <div class="wave-pill">
+        <span id="wave-kicker">准备阶段</span>
+        <strong id="wave-title">接入战场</strong>
+        <div class="wave-progress"><i id="wave-progress-fill"></i></div>
+        <small id="enemy-counter">敌人 0 / 0</small>
+      </div>
+
+      <div class="hud-top-right">
+        <div class="core-card">
+          <div class="core-card-title"><span>能源核心</span><b id="core-percent">100%</b></div>
+          <div class="core-bar"><i id="core-fill"></i></div>
+          <div class="core-card-foot"><span id="core-value">160</span><span>/ 160 稳定度</span></div>
+        </div>
+        <div class="minimap-card">
+          <div class="minimap-title"><span>战术地图</span><b>LIVE</b></div>
+          <canvas id="minimap" width="210" height="210"></canvas>
+          <div class="minimap-legend">
+            <span><i class="dot-player"></i>你</span>
+            <span><i class="dot-ally"></i>队友</span>
+            <span><i class="dot-enemy"></i>敌人</span>
+            <span><i class="dot-core"></i>核心</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="squad-panel">
+        <div class="panel-label"><span>AI 小队</span><b id="squad-status">协同中</b></div>
+        <div id="ally-cards" class="ally-cards"></div>
+      </div>
+
+      <div class="vitals">
+        <div class="commander-avatar">指</div>
+        <div class="vitals-main">
+          <div class="vitals-label"><span>指挥官状态</span><b id="health-value">100</b></div>
+          <div class="health-bar"><i id="health-fill"></i></div>
+          <div class="vitals-foot"><span id="health-state">状态稳定</span><span>护甲自动恢复</span></div>
+        </div>
+      </div>
+
+      <div class="weapon-panel">
+        <div class="weapon-kicker">ORANGE-9 / 脉冲步枪</div>
+        <div class="ammo-line"><b id="ammo-value">30</b><span>/ 30</span></div>
+        <div class="ammo-ticks" id="ammo-ticks"></div>
+        <div id="reload-label" class="reload-label">R 换弹</div>
+      </div>
+
+      <button id="skill-button" class="skill-button" type="button" title="按 Q 释放橘光脉冲">
+        <span class="skill-key">Q</span>
+        <strong>橘光脉冲</strong>
+        <small id="skill-status">就绪</small>
+        <i id="skill-cooldown" class="skill-cooldown"></i>
+      </button>
+
+      <div class="command-dock">
+        <button id="radio-open" class="radio-open" type="button">
+          <span class="radio-icon">⌁</span>
+          <span><b>战术电台</b><small>T 对队友说一句话</small></span>
+        </button>
+        <div class="quick-commands" id="quick-commands">
+          <button type="button" data-intent="follow"><kbd>1</kbd><span><b>↗</b>跟我走</span></button>
+          <button type="button" data-intent="defend"><kbd>2</kbd><span><b>◈</b>守核心</span></button>
+          <button type="button" data-intent="flank"><kbd>3</kbd><span><b>⌁</b>包抄</span></button>
+          <button type="button" data-intent="focus"><kbd>4</kbd><span><b>◎</b>集火</span></button>
+          <button type="button" data-intent="retreat"><kbd>5</kbd><span><b>↩</b>撤退</span></button>
+          <button type="button" data-intent="hold"><kbd>6</kbd><span><b>Ⅱ</b>待命</span></button>
+        </div>
+        <div class="parser-badge"><i></i><span>LOCAL AI</span></div>
+      </div>
+
+      <div id="dialogue-stack" class="dialogue-stack"></div>
+
+      <div id="crosshair" class="crosshair">
+        <i class="ch-top"></i><i class="ch-right"></i><i class="ch-bottom"></i><i class="ch-left"></i>
+        <span class="ch-dot"></span>
+        <i id="hitmarker" class="hitmarker"></i>
+      </div>
+
+      <div id="interact-prompt" class="interact-prompt hidden">
+        <kbd>E</kbd><span>扶起倒下的队友</span>
+        <div class="interact-progress"><i id="interact-fill"></i></div>
+      </div>
+
+      <div id="wave-banner" class="wave-banner hidden">
+        <div class="wave-banner-kicker" id="banner-kicker">行动开始</div>
+        <h2 id="banner-title">守住能源核心</h2>
+        <p id="banner-subtitle">撑过三波进攻</p>
+        <div id="banner-brief" class="banner-brief"></div>
+      </div>
+
+      <div id="kill-feed" class="kill-feed"></div>
+      <div id="objective-chip" class="objective-chip"><i></i><span>目标：守住能源核心</span></div>
+      <div id="damage-overlay" class="damage-overlay"></div>
+      <div class="hud-hints">WASD 移动 · 左键射击 · R 换弹 · 1—6 下令 · T 战术电台 · Q 脉冲</div>
+    </section>
+
+    <section id="pause-screen" class="screen pause-screen hidden">
+      <div class="modal-card pause-card">
+        <span class="eyebrow">MISSION PAUSED</span>
+        <h2>行动暂停</h2>
+        <p>核心还在等你。回到战场时，队友会保留刚刚的指令。</p>
+        <div class="modal-actions">
+          <button id="resume-button" class="primary-button" type="button"><span>继续行动</span><b>→</b></button>
+          <button id="restart-button" class="ghost-button" type="button">重新开始</button>
+          <button id="menu-button" class="text-button" type="button">返回行动页</button>
+        </div>
+        <div class="pause-tip"><kbd>Esc</kbd> 继续 · 鼠标点击画面可重新锁定视角</div>
+      </div>
+    </section>
+
+    <section id="radio-modal" class="screen modal-screen hidden">
+      <div class="modal-card radio-card">
+        <div class="radio-header">
+          <div>
+            <span class="eyebrow">TACTICAL RADIO / LOCAL AI</span>
+            <h2>战术电台</h2>
+          </div>
+          <button id="radio-close" class="icon-button" type="button" aria-label="关闭战术电台">关闭</button>
+        </div>
+        <p class="radio-lead">直接说人话。比如「橙橙守住左边」「闪闪去包抄」「都回来」。</p>
+        <form id="radio-form">
+          <div class="radio-input-wrap">
+            <span class="wave-icon">◉</span>
+            <input id="radio-input" type="text" autocomplete="off" maxlength="60" placeholder="告诉队友你想怎么打…" aria-label="输入给 AI 队友的战术指令">
+            <button type="submit" class="send-button">发送 <b>↗</b></button>
+          </div>
+        </form>
+        <div class="suggestion-row">
+          <span>试试：</span>
+          <button type="button" data-command="橙橙守住左边">橙橙守住左边</button>
+          <button type="button" data-command="闪闪从右边包抄">闪闪从右边包抄</button>
+          <button type="button" data-command="集火那个大块头">集火那个大块头</button>
+          <button type="button" data-command="都回来，守住核心">都回来，守住核心</button>
+        </div>
+        <div class="parser-note">
+          <span class="parser-dot"></span>
+          <div><b>本地战术解析可用</b><span>自然语言 → 意图白名单 → 规则系统执行。断网也不影响队友响应。</span></div>
+        </div>
+        <div class="radio-history" id="radio-history"></div>
+      </div>
+    </section>
+
+    <section id="result-screen" class="screen result-screen hidden">
+      <div class="result-wrap">
+        <div class="result-hero">
+          <span id="result-eyebrow" class="eyebrow">MISSION COMPLETE</span>
+          <h2 id="result-title">防线守住了</h2>
+          <p id="result-subtitle">你的队友把最后一句话记住了。</p>
+          <div id="result-grade" class="result-grade">S</div>
+        </div>
+        <div class="result-stats">
+          <div><span>完成波次</span><b id="stat-wave">3 / 3</b></div>
+          <div><span>击破单位</span><b id="stat-kills">0</b></div>
+          <div><span>命中率</span><b id="stat-accuracy">0%</b></div>
+          <div><span>核心稳定度</span><b id="stat-core">0%</b></div>
+          <div><span>下达指令</span><b id="stat-commands">0</b></div>
+          <div><span>用时</span><b id="stat-time">00:00</b></div>
+        </div>
+        <div id="result-insight" class="result-insight">
+          <span>队友复盘</span>
+          <p>这场战斗里，你让 AI 队友真正参与了决策。</p>
+        </div>
+        <div class="result-actions">
+          <button id="again-button" class="primary-button" type="button"><span>再守一次</span><b>↻</b></button>
+          <button id="result-menu-button" class="ghost-button" type="button">返回行动页</button>
+        </div>
+        <div class="result-foot">橘光行动 / AI 协防 · 基于开源 Three.js 构建</div>
+      </div>
+    </section>
+
+    <div id="mobile-warning" class="mobile-warning">
+      <div class="mobile-card">
+        <span class="eyebrow">DESKTOP MISSION</span>
+        <h2>请用电脑打开</h2>
+        <p>这是一款需要鼠标和键盘的 3D 协作 FPS。桌面版 Chrome 或 Edge 能获得完整体验。</p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

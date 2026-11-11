@@ -1,0 +1,157 @@
+export const COLORS = {
+  orange: 0xff7a2f,
+  orangeBright: 0xffa24d,
+  orangeDeep: 0xe95417,
+  cream: 0xfff2dc,
+  creamDark: 0xf3d7b8,
+  teal: 0x2fb7a5,
+  tealBright: 0x71e0cd,
+  coral: 0xe85b4a,
+  coralDeep: 0xc54134,
+  sand: 0xf6c98f,
+  ground: 0xefd1a8,
+  ink: 0x493126,
+  skyTop: 0xff9f66,
+  skyHorizon: 0xffe4c4,
+};
+
+export const CONFIG = {
+  arenaHalf: 24,
+  player: {
+    maxHealth: 100,
+    radius: 0.58,
+    speed: 5.6,
+    sprintSpeed: 8.2,
+    jumpSpeed: 5.5,
+    eyeHeight: 1.68,
+    mouseSensitivity: 0.0021,
+    respawnDelay: 4.5,
+  },
+  weapon: {
+    magSize: 30,
+    damage: 22,
+    headshotMultiplier: 2,
+    fireRate: 0.105,
+    reloadTime: 1.35,
+    range: 75,
+    spread: 0.008,
+  },
+  skill: {
+    cooldown: 20,
+    radius: 6.4,
+    damage: 55,
+    push: 7,
+  },
+  core: {
+    maxHealth: 160,
+    radius: 2.2,
+  },
+  ally: {
+    maxHealth: 120,
+    speed: 5.2,
+    shootRange: 15,
+    damage: 11,
+    fireRate: 0.72,
+    reviveTime: 2.2,
+    autoReviveDelay: 16,
+  },
+  waves: [
+    {
+      name: '第一波 · 探路者',
+      subtitle: '小型机器人正在接近能源核心',
+      brief: '先用 1—6 下达指令，试试「守核心」和「跟我走」。',
+      spawnInterval: 1.35,
+      enemies: [
+        { type: 'runner', count: 5 },
+      ],
+    },
+    {
+      name: '第二波 · 泡泡炮阵',
+      subtitle: '远程单位出现，别让它们站稳脚跟',
+      brief: '提示：用「包抄」逼出远程单位，用「集火」快速清掉它们。',
+      spawnInterval: 1.2,
+      enemies: [
+        { type: 'runner', count: 3 },
+        { type: 'gunner', count: 4 },
+      ],
+    },
+    {
+      name: '第三波 · 大块头登场',
+      subtitle: '精英守卫压境，守住最后一分钟',
+      brief: '最终波：保留「橘光脉冲」，关键时刻能救下核心。',
+      spawnInterval: 1.3,
+      enemies: [
+        { type: 'runner', count: 3 },
+        { type: 'gunner', count: 3 },
+        { type: 'elite', count: 1 },
+      ],
+    },
+  ],
+  commands: [
+    { id: 'follow', key: '1', label: '跟我走', short: '跟随', icon: '↗', duration: 35 },
+    { id: 'defend', key: '2', label: '守住核心', short: '守核', icon: '◈', duration: 40 },
+    { id: 'flank', key: '3', label: '侧翼包抄', short: '包抄', icon: '⌁', duration: 26 },
+    { id: 'focus', key: '4', label: '集火目标', short: '集火', icon: '◎', duration: 24 },
+    { id: 'retreat', key: '5', label: '撤退回能', short: '撤退', icon: '↩', duration: 14 },
+    { id: 'hold', key: '6', label: '原地待命', short: '待命', icon: 'Ⅱ', duration: 32 },
+  ],
+};
+
+export const INTENT_LABELS = {
+  follow: '跟随你',
+  defend: '防守核心',
+  flank: '侧翼包抄',
+  focus: '集火目标',
+  retreat: '撤退回能',
+  hold: '原地待命',
+};
+
+export const ENEMY_TYPES = {
+  runner: {
+    label: '蹦蹦虫',
+    maxHealth: 62,
+    speed: 3.25,
+    radius: 0.55,
+    damage: 9,
+    attackRange: 2.7,
+    attackRate: 1.05,
+    score: 100,
+    color: 0xe9604d,
+    accent: 0xffb088,
+  },
+  gunner: {
+    label: '泡泡炮',
+    maxHealth: 48,
+    speed: 2.25,
+    radius: 0.62,
+    damage: 8,
+    attackRange: 10.5,
+    preferredRange: 8,
+    attackRate: 2.15,
+    projectileSpeed: 8.5,
+    score: 150,
+    color: 0xd94f42,
+    accent: 0xffd0a1,
+  },
+  elite: {
+    label: '重装守卫',
+    maxHealth: 300,
+    speed: 1.8,
+    radius: 1.02,
+    damage: 16,
+    attackRange: 12,
+    preferredRange: 8.5,
+    attackRate: 1.9,
+    projectileSpeed: 7.5,
+    score: 600,
+    color: 0xb83d33,
+    accent: 0xffc46b,
+  },
+};
+
+export const SPAWN_SIDES = [
+  { id: 'north', label: '北侧', x: 0, z: -22, yaw: 0 },
+  { id: 'east', label: '东侧', x: 22, z: 0, yaw: -Math.PI / 2 },
+  { id: 'south', label: '南侧', x: 0, z: 22, yaw: Math.PI },
+  { id: 'west', label: '西侧', x: -22, z: 0, yaw: Math.PI / 2 },
+];
