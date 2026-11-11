@@ -108,17 +108,24 @@ export class UI {
       this.el.intelToggle.textContent = open ? '收起任务简报' : '查看任务简报';
       this.game.audio.uiClick();
     });
-    // 被嵌在 iframe 里时（例如魔搭创空间），提示可以开新窗口，那里鼠标锁定最稳
-    const embedded = window.self !== window.top;
-    if (embedded && this.el.openWindow) {
+    // 嵌在 iframe 里时（例如魔搭创空间）指针锁定拿不到，全屏是 allow 列表里允许的，
+    // 至少把画面撑满，配合右键拖动视角也能玩得像样
+    const enterFullscreen = () => {
+      const root = document.documentElement;
+      const request = root.requestFullscreen || root.webkitRequestFullscreen;
+      if (!request) return;
+      try {
+        const result = request.call(root);
+        if (result && typeof result.catch === 'function') result.catch(() => {});
+      } catch (error) {
+        /* 全屏被拒不影响继续玩 */
+      }
+    };
+    if (window.self !== window.top && this.el.openWindow) {
       this.el.openWindow.hidden = false;
-      this.el.openWindow.addEventListener('click', () => {
-        window.open(window.location.href, '_blank', 'noopener');
-      });
+      this.el.openWindow.addEventListener('click', enterFullscreen);
     }
-    this.el.lockFallbackOpen?.addEventListener('click', () => {
-      window.open(window.location.href, '_blank', 'noopener');
-    });
+    this.el.lockFallbackOpen?.addEventListener('click', enterFullscreen);
     this.el.muteStart?.addEventListener('click', () => this.toggleMute());
     this.el.resume?.addEventListener('click', () => this.game.resume());
     this.el.restart?.addEventListener('click', () => {

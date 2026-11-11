@@ -51,15 +51,35 @@ for (const mode of MODES) {
       state: game.state,
     };
 
-    // 锁定与拖拽两种视角方式，至少要有一条能用
+    // 统一进拖拽模式（无头 Chrome 通常会真的锁上，先退出来才能测到拖拽分支）
+    if (document.pointerLockElement) document.exitPointerLock();
+    game.enableDragLook();
+    await sleep(100);
+
     const yawBeforeDrag = game.player.yaw;
-    if (!snapshot.pointerLocked) game.enableDragLook();
-    document.dispatchEvent(new MouseEvent('mousedown', { button: 0, bubbles: true }));
+    game.lookDragRight = true;
     document.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, movementX: 60, movementY: 0 }));
     await sleep(60);
     snapshot.yawMoved = Math.abs(game.player.yaw - yawBeforeDrag) > 0.01;
     snapshot.pillShown = pill ? !pill.classList.contains('hidden') : false;
+
+    // 左键只开火、不该再带动视角；右键才转视角
+    game.lookDragRight = false;
+    const yawBeforeLeft = game.player.yaw;
+    document.dispatchEvent(new MouseEvent('mousedown', { button: 0, bubbles: true }));
+    document.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, movementX: 60, movementY: 0 }));
+    await sleep(60);
+    snapshot.leftDragLooks = Math.abs(game.player.yaw - yawBeforeLeft) > 0.01;
+    snapshot.leftFires = game.input.mouseDown === true;
     document.dispatchEvent(new MouseEvent('mouseup', { button: 0, bubbles: true }));
+
+    const yawBeforeRight = game.player.yaw;
+    document.dispatchEvent(new MouseEvent('mousedown', { button: 2, bubbles: true }));
+    document.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, movementX: 60, movementY: 0 }));
+    await sleep(60);
+    snapshot.rightDragLooks = Math.abs(game.player.yaw - yawBeforeRight) > 0.01;
+    snapshot.rightDragFires = game.input.mouseDown === true;
+    document.dispatchEvent(new MouseEvent('mouseup', { button: 2, bubbles: true }));
     return snapshot;
   });
   rows.push({ mode, ...result });
@@ -77,6 +97,9 @@ for (const row of rows) {
   if (!row.yawMoved) failures.push(`${row.mode}: 视角无法移动`);
   if (row.state !== 'playing') failures.push(`${row.mode}: 状态异常 ${row.state}`);
   if (!row.pointerLocked && !row.pillShown) failures.push(`${row.mode}: 锁定被拦却没给提示`);
+  if (!row.leftFires) failures.push(`${row.mode}: 左键没能开火`);
+  if (!row.rightDragLooks) failures.push(`${row.mode}: 右键拖动没转视角`);
+  if (row.rightDragFires) failures.push(`${row.mode}: 右键拖动不该开火`);
 }
 
 console.table(rows);

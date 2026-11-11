@@ -67,7 +67,8 @@ export class Game {
     this.effects = [];
     this.input = { keys: new Set(), mouseDown: false };
     this.dragLook = false;
-    this.dragging = false;
+    this.lookDragLeft = false;
+    this.lookDragRight = false;
     this.lockBlocked = false;
     this.clock = new THREE.Clock();
     this.raycaster = new THREE.Raycaster();
@@ -136,35 +137,45 @@ export class Game {
   bindEvents() {
     window.addEventListener('resize', () => this.resize());
     document.addEventListener('pointerlockchange', () => {
+      // 拖拽模式下本来就没有锁定，不能因为「没锁」就暂停
+      if (this.dragLook) return;
       if (document.pointerLockElement !== this.canvas && this.state === 'playing') {
         this.pause();
       }
     });
-    // iframe 里拿不到指针锁时，退化成「按住左键拖动视角」，保证游戏仍然可玩
+    // iframe 里拿不到指针锁时（创空间就是这样），退化成「拖动视角」：
+    // 右键拖动只转视角，左键仍是开火；按住左键拖动则两者同时进行。
     document.addEventListener('pointerlockerror', () => this.enableDragLook());
     document.addEventListener('mousemove', (event) => {
       if (this.state !== 'playing' || this.ui?.radioOpen) return;
       const locked = document.pointerLockElement === this.canvas;
-      if (locked || (this.dragLook && this.dragging)) {
+      if (locked || (this.dragLook && this.isDragLooking())) {
         this.player.applyLook(event.movementX, event.movementY, CONFIG.player.mouseSensitivity);
       }
     });
     document.addEventListener('mousedown', (event) => {
-      if (event.button !== 0) return;
-      if (this.state === 'playing' && !this.ui?.radioOpen) {
-        this.dragging = true;
-        if (document.pointerLockElement !== this.canvas && !this.lockBlocked) {
-          this.requestPointerLock();
-        }
-        this.input.mouseDown = true;
-        this.audio.ensure();
+      if (this.state !== 'playing' || this.ui?.radioOpen) return;
+      if (event.button === 2) {
+        if (this.dragLook) this.lookDragRight = true;
+        return;
       }
+      if (event.button !== 0) return;
+      if (document.pointerLockElement !== this.canvas && !this.lockBlocked) {
+        this.requestPointerLock();
+      }
+      this.input.mouseDown = true;
+      if (this.dragLook) this.lookDragLeft = true;
+      this.audio.ensure();
     });
     document.addEventListener('mouseup', (event) => {
       if (event.button === 0) {
         this.input.mouseDown = false;
-        this.dragging = false;
+        this.lookDragLeft = false;
       }
+      if (event.button === 2) this.lookDragRight = false;
+    });
+    document.addEventListener('contextmenu', (event) => {
+      if (this.dragLook) event.preventDefault();
     });
     this.canvas.addEventListener('click', () => {
       if (this.state === 'playing' && document.pointerLockElement !== this.canvas && !this.lockBlocked) {
@@ -181,13 +192,15 @@ export class Game {
     });
     window.addEventListener('blur', () => {
       this.input.mouseDown = false;
-      this.dragging = false;
+      this.lookDragLeft = false;
+      this.lookDragRight = false;
       this.input.keys.clear();
     });
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
         this.input.mouseDown = false;
-        this.dragging = false;
+        this.lookDragLeft = false;
+        this.lookDragRight = false;
         this.input.keys.clear();
         if (this.state === 'playing') this.pause();
       }
@@ -241,6 +254,10 @@ export class Game {
       return;
     }
     this.input.keys.add(event.code);
+  }
+
+  isDragLooking() {
+    return this.lookDragLeft || this.lookDragRight;
   }
 
   enableDragLook() {
