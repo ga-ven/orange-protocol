@@ -226,7 +226,6 @@ export function moveActor(actor, dirX, dirZ, speed, dt, obstacles, arenaHalf) {
           unitZ = candidateZ;
           break;
         }
-        if (i === 0) actor.avoidSide *= -1;
       }
     }
   }

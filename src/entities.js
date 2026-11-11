@@ -1,5 +1,5 @@
 import * as THREE from '../vendor/three.module.js';
-import { COLORS, CONFIG, ENEMY_TYPES, INTENT_LABELS } from './config.js';
+import { COLORS, CONFIG, ENEMY_TYPES, INTENT_LABELS, SPAWN_SIDES } from './config.js';
 import {
   angleTo,
   clamp,
@@ -1233,8 +1233,14 @@ export class Enemy {
     this.forcedTargetUntil = 0;
     this.target = null;
     this.speed = this.config.speed;
+    this.attackRange = this.config.attackRange;
+    this.attackRate = this.config.attackRate;
+    this.damage = this.config.damage;
     this.spawnTimer = 0.45;
     this.invulnerable = true;
+    this.stallTimer = 0;
+    this.stallAnchor = null;
+    this.stallFlips = 0;
 
     this.model = buildEnemyModel(type, this.config.accent);
     this.group = this.model.group;
@@ -1326,6 +1332,7 @@ export class Enemy {
 
     const targetPos = this.target === game.core ? game.core.position : this.target.position;
     const distance = dist2D(this.position, targetPos);
+    this.updateStall(game, dt);
     let desiredX = targetPos.x - this.position.x;
     let desiredZ = targetPos.z - this.position.z;
     const directionLength = Math.hypot(desiredX, desiredZ) || 1;
@@ -1399,6 +1406,47 @@ export class Enemy {
       const ratio = this.health / this.maxHealth;
       drawHealthBar(this.healthBar, ratio);
     }
+  }
+
+  // 卡住自愈：4 秒内挪不出 2.6 米就换个绕行方向，两次都没走出去就重新投放，
+  // 保证任何几何死角都不会把波次卡住。
+  updateStall(game, dt) {
+    if (!this.stallAnchor) {
+      this.stallAnchor = { x: this.position.x, z: this.position.z };
+      this.stallTimer = 0;
+      return;
+    }
+    if (dist2D(this.position, this.stallAnchor) > 2.6) {
+      this.stallAnchor = { x: this.position.x, z: this.position.z };
+      this.stallTimer = 0;
+      this.stallFlips = 0;
+      return;
+    }
+    this.stallTimer += dt;
+    if (this.stallTimer < 4) return;
+
+    this.stallTimer = 0;
+    this.stallAnchor = null;
+    this.stallFlips += 1;
+    this.avoidSide = -(this.avoidSide || 1);
+
+    if (this.stallFlips >= 2 && dist2D(this.position, game.core.position) > 7) {
+      this.stallFlips = 0;
+      this.redeploy(game);
+    }
+  }
+
+  redeploy(game) {
+    const side = SPAWN_SIDES[Math.floor(Math.random() * SPAWN_SIDES.length)];
+    this.position.set(side.x, 0, side.z);
+    this.group.position.copy(this.position);
+    this.group.rotation.y = side.yaw ?? Math.PI;
+    this.spawnTimer = 0.4;
+    this.invulnerable = true;
+    this.attackCooldown = 0.9;
+    this.target = null;
+    this.decisionTimer = 0;
+    game.spawnSpawnPortal?.(this.position);
   }
 
   worldObstacles(game) {
