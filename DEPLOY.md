@@ -95,32 +95,40 @@ node scripts/deploy.mjs
 
 ## 验收清单
 
-- [ ] `https://modelscope.cn/studios/try888/orange-protocol` 能打开，点「应用」能进游戏
-- [ ] 开始页正常，「开始行动」可点，第一人称视角出来了
-- [ ] 队友、敌人、核心都渲染正常（不是一片橙色或纯黑）
-- [ ] F12 Console 无红色；重点看有没有 `Failed to load module script`
-- [ ] 完整打一局到结算页
-- [ ] 直链 `https://try888-orange-protocol.ms.show/` 能独立打开
+- [x] `https://modelscope.cn/studios/try888/orange-protocol` 可访问，状态 `Running`
+- [x] `sdk_type=docker`、`app_port=7860`、`hardware=platform/2v-cpu-8g-mem`
+- [x] 首页、`styles.css`、`src/main.js`、`vendor/three*.js` 全部 200，且 `.js` 的 MIME 是 `text/javascript`
+- [x] 在真实嵌入环境里点「开始行动」进入 `playing`，两名队友在场
+- [x] 指针锁定被拒时自动降级，右键转视角、左键开火，提示条正常显示
+- [ ] 完整打一局到结算页（需要人工玩一遍）
+- [ ] 提交前在手机宽屏 / 2K 屏各看一眼 HUD
 
-## 关于鼠标锁定（FPS 特有）
+## 关于鼠标锁定（FPS 特有，已实测）
 
-我查了你现有空间页面的 iframe 属性，`allow` 是这一串：
+创空间**没有"顶层页面"这种形态**。浏览器打开 `.ms.show` 会被跳到
+`https://www.modelscope.cn/studios/{owner}/{repo}?mode=full`，那是一个**铺满视口的跨域 iframe**：
 
 ```
-accelerometer; ambient-light-sensor; autoplay; ... fullscreen; ... wake-lock; xr-spatial-tracking
+iframe src = https://try888-orange-protocol.ms.show/?t=...&__theme=light
+iframe allow = accelerometer; ...; fullscreen; ...; wake-lock; xr-spatial-tracking   ← 没有 pointer-lock
 ```
 
-**里面没有 `pointer-lock`**，而应用跑在 `try888-xxx.ms.show` 跨域子域上。对打字和点击类游戏（猫咪侦探所、假面协议）没影响，
-但对第一人称射击是致命的——鼠标转不了视角。
+用**有头 Chrome** 在真实嵌入环境里点「开始行动」，实测结果：
 
-两层兜底已就位：
+```
+locked: false          ← 指针锁定被拒
+dragLook: true         ← 自动降级生效
+state: playing         ← 游戏正常进行
+rightDragRotates: true  rightDragFires: false
+```
 
-1. 检测到 `pointerlockerror` → 自动切成「按住左键拖动视角」，并在指令栏上方浮出提示条；
-2. 检测到在 iframe 里运行 → 开始页多出「在新窗口打开」按钮。
+所以兜底不是假设，是必需品。现在的方案：
 
-另外直链是**独立顶层页面**，指针锁定正常。实测该域名只认浏览器 UA，浏览器访问一律 200。
+- **右键拖动**转视角、**左键**照常开火（按住左键拖动也能微调准星，但会同时射击）；
+- 底部浮出提示条说明当前模式，附一个**全屏**按钮（`fullscreen` 在 allow 列表里，可用）；
+- 检测到在 iframe 里运行，开始页也会多一个「全屏游玩」。
 
-**建议**：正文给创空间链接（官方要求），玩法说明第一行加一句「想要标准 FPS 手感请开直链」。
+**给评委的建议**：先点「全屏」，再按提示用右键转视角。不要写"请打开直链"——直链会跳回同一个 iframe，没有用。
 
 ## 常见问题
 
@@ -130,6 +138,6 @@ accelerometer; ambient-light-sensor; autoplay; ... fullscreen; ... wake-lock; xr
 | 构建失败 `COPY failed` | 文件没传到根目录 | 确认 `index.html`、`Dockerfile` 在根 |
 | 打开空白页 | `src/main.js` 或 `vendor/` 缺失 | 查 Network 哪个 404 |
 | 有 HUD 但全黑 | WebGL 上下文没起来 | 换 Chrome / Edge，别用 Safari |
-| 鼠标转不了视角 | iframe 无指针锁定权限 | 用直链，或点提示条里的「在新窗口打开」 |
+| 鼠标转不了视角 | iframe 的 `allow` 列表没有 `pointer-lock` | 正常现象，游戏会自动降级：**右键拖动**转视角、**左键**开火。想更沉浸就点提示条或开始页的「全屏」（`fullscreen` 在 allow 列表里）。注意**不要**指望「直链 / 新窗口」——`.ms.show` 会 302 回 `modelscope.cn/studios/...?mode=full`，还是同一个 iframe |
 | `git push` 被拒 | 分支不是 `master` | 官方默认分支是 `master`，本项目已改名 |
 | 合并冲突 | 空间仓库自带初始提交 | 用 `--allow-unrelated-histories`，冲突时 `git checkout --ours .` |

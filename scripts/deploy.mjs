@@ -234,4 +234,4 @@ if (data.host) {
     log(`直链自检：失败（${redact(error.message)}）`);
   }
 }
-log('提示：空间内嵌播放拿不到 pointer-lock，鼠标手感请用直链。');
+log('提示：创空间页面会以跨域 iframe 播放，指针锁定拿不到，游戏已自动降级为右键拖动视角。');

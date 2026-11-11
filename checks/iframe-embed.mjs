@@ -91,9 +91,9 @@ for (const row of rows) {
     failures.push(`${row.mode}: ${row.error}`);
     continue;
   }
-  // 无论锁定是否被拦，嵌入式都必须满足：能看到新窗口按钮、视角能动、状态正常
+  // 无论锁定是否被拦，嵌入式都必须满足：能看到全屏入口、视角能动、状态正常
   if (!row.embedded) failures.push(`${row.mode}: 没跑在 iframe 里，测试无效`);
-  if (row.openWindowHidden !== false) failures.push(`${row.mode}: 未显示「在新窗口打开」按钮`);
+  if (row.openWindowHidden !== false) failures.push(`${row.mode}: 未显示「全屏游玩」按钮`);
   if (!row.yawMoved) failures.push(`${row.mode}: 视角无法移动`);
   if (row.state !== 'playing') failures.push(`${row.mode}: 状态异常 ${row.state}`);
   if (!row.pointerLocked && !row.pillShown) failures.push(`${row.mode}: 锁定被拦却没给提示`);
