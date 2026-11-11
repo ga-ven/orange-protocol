@@ -79,7 +79,8 @@ node scripts/deploy.mjs
    → `push -u modelscope master`
 6. `POST /studios/{o}/{r}/deploy`
 7. 轮询 `GET /logs/build` 与空间状态，直到 `Running` 或报错
-8. 直链自检：抓一次 `https://try888-orange-protocol.ms.show/`，确认 HTML 里有「橘光行动」
+8. 直链自检：抓一次 `https://try888-orange-protocol.ms.show/`
+   （protected 空间会返回 403 —— 这是正常的，脚本会提示改用浏览器验收，不会误判成部署失败）
 
 可选参数：`--repo=名字`、`--visibility=private|protected`、`--skip-push`、`--skip-deploy`、`--no-wait`。
 
@@ -97,7 +98,9 @@ node scripts/deploy.mjs
 
 - [x] `https://modelscope.cn/studios/try888/orange-protocol` 可访问，状态 `Running`
 - [x] `sdk_type=docker`、`app_port=7860`、`hardware=platform/2v-cpu-8g-mem`
-- [x] 首页、`styles.css`、`src/main.js`、`vendor/three*.js` 全部 200，且 `.js` 的 MIME 是 `text/javascript`
+- [x] 浏览器里打开首页、`styles.css`、`src/main.js`、`vendor/three*.js` 全部 200，且 `.js` 的 MIME 是 `text/javascript`
+      ⚠️ **必须用浏览器（带登录态）验收**：`.ms.show` 对匿名请求一律 403，`curl` 拿到的 403 不代表应用挂了
+      —— 已确认在线的猫咪侦探所，用 `curl` 同样是 403。
 - [x] 在真实嵌入环境里点「开始行动」进入 `playing`，两名队友在场
 - [x] 指针锁定被拒时自动降级，右键转视角、左键开火，提示条正常显示
 - [ ] 完整打一局到结算页（需要人工玩一遍）

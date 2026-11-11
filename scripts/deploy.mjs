@@ -227,9 +227,16 @@ if (data.host) {
     const response = await fetch(data.host, {
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/131.0 Safari/537.36' },
     });
-    const html = await response.text();
-    const looksRight = /橘光行动/.test(html);
-    log(`直链自检：HTTP ${response.status}${looksRight ? ' · 命中「橘光行动」' : ' · 未命中标题，可能还在启动'}`);
+    if (response.status === 401 || response.status === 403) {
+      // protected / private 空间不对匿名请求开放；已确认在线的公开空间用 curl 同样是 403，
+      // 所以这里不是"没起来"，验收必须在带登录态的浏览器里做。
+      log(`直链自检：HTTP ${response.status}（${data.visibility || VISIBILITY} 空间拒绝匿名访问，属正常）`);
+      log('          请用浏览器登录后打开空间页验收，不要用 curl 判断死活。');
+    } else {
+      const html = await response.text();
+      const looksRight = /橘光行动/.test(html);
+      log(`直链自检：HTTP ${response.status}${looksRight ? ' · 命中「橘光行动」' : ' · 未命中标题，可能还在启动'}`);
+    }
   } catch (error) {
     log(`直链自检：失败（${redact(error.message)}）`);
   }
