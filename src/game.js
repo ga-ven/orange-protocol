@@ -4,6 +4,7 @@ import { World } from './world.js';
 import { Ally, Enemy, EnemyProjectile, Player } from './entities.js';
 import { AudioManager } from './audio.js';
 import { buildAllyReply, describeParse, parseLocalCommand, TacticalBrain } from './ai.js';
+import { NpcVoice } from './npc.js';
 import {
   clamp,
   damp,
@@ -41,6 +42,10 @@ export class Game {
     this.player = new Player(this.scene, this.camera, this.world);
     this.audio = new AudioManager();
     this.brain = new TacticalBrain();
+    // 大模型只负责说话与兜底解析；服务端没配令牌时会自己保持 enabled=false
+    this.voice = new NpcVoice();
+    this.voice.probe();
+    this.voicePending = false;
     this.ui = null;
 
     this.allies = [
@@ -493,6 +498,7 @@ export class Game {
     this.brain.lastSource = parsed.source || 'local';
     if (!parsed.ok) {
       this.audio.commandFail();
+      this.requestVoiceParse(text);
       return parsed;
     }
 
@@ -774,6 +780,7 @@ export class Game {
         const ally = this.allies[this.currentWaveIndex % this.allies.length];
         if (ally && !ally.downed) {
           ally.say(ally.waveSuggestion(this.currentWaveIndex + 1, this), this);
+          this.requestBanter(ally, this.currentWaveIndex + 1);
         }
       }
       if (this.waveTimer <= 0) {
@@ -1356,6 +1363,66 @@ export class Game {
       insight,
     };
     this.ui.showResult(this.resultData);
+    this.requestDebrief(ally, leaks);
+  }
+
+  // 结算页先显示本地模板，大模型回来后再替换（失败就一直是模板）
+  requestDebrief(ally, leaks) {
+    if (!this.voice.enabled) return;
+    const sideLabels = { north: '北侧', east: '东侧', south: '南侧', west: '西侧' };
+    const leakSide = leaks[0] && leaks[0][1] > 0 ? sideLabels[leaks[0][0]] : null;
+    this.voice
+      .debrief({
+        victory: this.resultData.victory,
+        grade: this.resultData.grade,
+        corePercent: this.resultData.corePercent,
+        accuracy: this.resultData.accuracy,
+        kills: this.resultData.kills,
+        commands: this.resultData.commands,
+        waveReached: this.resultData.waveReached,
+        leakSide,
+        allyName: ally.name,
+        downed: ally.memory.downedCount || 0,
+      })
+      .then((text) => {
+        if (text) this.ui.setInsight(text, 'ai');
+      });
+  }
+
+  // 波次间让队友用自己的话交代下一波
+  requestBanter(ally, waveIndex) {
+    if (!this.voice.enabled || !ally || ally.downed) return;
+    const sideLabels = { north: '北侧', east: '东侧', south: '南侧', west: '西侧' };
+    const leaks = Object.entries(ally.memory.leaks).sort((a, b) => b[1] - a[1]);
+    const leakSide = leaks[0] && leaks[0][1] > 0 ? sideLabels[leaks[0][0]] : null;
+    const counts = Object.entries(ally.memory.commandCounts || {}).sort((a, b) => b[1] - a[1]);
+    const mostUsed = counts[0] ? INTENT_LABELS[counts[0][0]] || '守核心' : '守核心';
+    this.voice
+      .banter({ wave: waveIndex, leakSide, mostUsed, downed: ally.memory.downedCount || 0 })
+      .then((text) => {
+        if (!text || this.state !== 'playing' || ally.downed) return;
+        ally.say(text, this);
+      });
+  }
+
+  // 本地解析没听懂时的兜底：走模型，但只接受六种意图，绝不接受坐标或数值
+  requestVoiceParse(text) {
+    if (!this.voice.enabled || this.voicePending) return;
+    if (this.state !== 'playing' && !this.pausedForRadio) return;
+    this.voicePending = true;
+    this.ui.systemSay('没听懂，正在让大模型解析…', '指挥部');
+    this.voice.parseIntent(text).then((result) => {
+      this.voicePending = false;
+      if (this.state !== 'playing' && !this.pausedForRadio) return;
+      if (!result) {
+        this.ui.systemSay('大模型也没抓到战术意图，换个说法试试。', '指挥部');
+        return;
+      }
+      this.brain.lastSource = 'remote';
+      this.quickCommand(result.intent);
+      // 明确告诉玩家这次是大模型补的，不假装是本地解析
+      this.ui.systemSay(`大模型兜底解析：${INTENT_LABELS[result.intent] || result.intent}`, '指挥部');
+    });
   }
 
   clearTransientObjects() {

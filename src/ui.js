@@ -246,10 +246,25 @@ export class UI {
     this.el.statCore.textContent = `${data.corePercent}%`;
     this.el.statCommands.textContent = String(data.commands);
     this.el.statTime.textContent = formatTime(data.time);
-    this.el.resultInsight.innerHTML = `
-      <span>队友复盘</span>
-      <p>${data.insight}</p>
-    `;
+    this.setInsight(data.insight, 'local');
+  }
+
+  // 复盘文案可能先由本地模板填好，再由大模型生成的内容替换。
+  // 用 textContent 而不是 innerHTML —— 这段文字来自模型，不能当 HTML 解析。
+  setInsight(text, source = 'local') {
+    const label = this.el.resultInsight.querySelector('span');
+    const body = this.el.resultInsight.querySelector('p');
+    if (label) {
+      label.textContent = source === 'ai' ? '队友复盘 · 大模型现场生成' : '队友复盘';
+    }
+    if (body) {
+      body.textContent = text;
+      body.classList.remove('is-fresh');
+      if (source === 'ai') {
+        void body.offsetWidth; // 强制重排，让动画能重放
+        body.classList.add('is-fresh');
+      }
+    }
   }
 
   setHealth(value, max) {

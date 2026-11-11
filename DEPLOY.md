@@ -94,6 +94,24 @@ node scripts/deploy.mjs
 3. 「设置」→ SDK 类型选 **Docker**，端口 **7860**
 4. 保存 → 等状态变 `Running`
 
+## 接上大模型（可选，但建议开）
+
+没有令牌游戏照样完整可玩，只是「复盘 / 波次提醒 / 兜底解析」走本地模板。
+要开模型，只需要在**服务端**放一个令牌，前端一行都不用改：
+
+1. 空间页 →「设置」→「环境变量管理」→ 新增
+   - 名称：`MODELSCOPE_API_KEY`
+   - 值：你的魔搭令牌（<https://modelscope.cn/my/myaccesstoken>）
+2. 保存后**重新上线一次**（环境变量要重新拉起容器才生效）
+3. 可选：`NPC_MODEL` 换模型（默认 `Qwen/Qwen3.8-Flash-Next`），`NPC_TIMEOUT_MS` 调超时（默认 25000）
+
+验证：打开游戏，`GET /api/npc` 应返回 `{"enabled":true,"model":"..."}`；
+打一局到结算页，「队友复盘」的标签会变成「队友复盘 · 大模型现场生成」。
+没配令牌时返回 `enabled:false`，标签保持「队友复盘」——这条降级路径有测试守着（`checks/npc.mjs`）。
+
+> 令牌只存在容器环境变量里，仓库和前端的任何地方都不会出现它。
+> 另外记得：这个推理接口**只提供流式**，非流式请求会直接挂住；服务端已经按流式解析。
+
 ## 验收清单
 
 - [x] `https://modelscope.cn/studios/try888/orange-protocol` 可访问，状态 `Running`
