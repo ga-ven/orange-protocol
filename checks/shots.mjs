@@ -35,6 +35,8 @@ await page.screenshot({ path: `${outDir}/01-title.png` });
 
 await page.evaluate(() => document.getElementById('start-button').click());
 await page.waitForTimeout(900);
+// 无头浏览器里合成点击拿不到指针锁定，会触发降级提示条；这是测试环境产物，截图时藏掉
+await page.evaluate(() => document.getElementById('lock-fallback')?.classList.add('hidden'));
 
 // 摆一个紧凑的交战场景：三种敌人、两名队友、核心受损
 await page.evaluate(() => {
