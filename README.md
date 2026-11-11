@@ -1,3 +1,12 @@
+---
+title: 橘光行动 · AI 协防
+emoji: 🍊
+colorFrom: orange
+colorTo: yellow
+sdk: docker
+app_port: 7860
+---
+
 # 橘光行动 · AI 协防（Orange Protocol）
 
 > **用一句中文，指挥两名 AI 队友守住核心。**
@@ -132,7 +141,8 @@ src/ai.js             本地指令解析、远程大脑、队友台词
 src/ui.js             HUD 与所有界面状态
 src/audio.js          Web Audio 程序化音效
 src/game.js           主循环、波次状态机、战斗结算、特效
-server.mjs            零依赖静态服务器（本地预览用）
+server.mjs            零依赖静态服务器（本地预览 + 容器内服务，MIME 与访问范围可控）
+Dockerfile            创空间 Docker 空间构建（node:24-alpine，7860 端口）
 checks/               Playwright 真浏览器测试与截图脚本
 vendor/               Three.js r187 + 许可证
 ```
@@ -174,7 +184,7 @@ node checks/showcase.mjs   # 生成 checks/ 下的展示截图
 - HUD 按视口宽度等比缩放，1080p / 2K 下比例一致。
 - 移动端会显示「请用桌面浏览器」提示，不做触屏适配。
 
-**关于嵌入播放**：被放进 iframe 时（例如魔搭创空间），浏览器可能不允许页面申请指针锁定。此时游戏会自动切换成「按住左键拖动视角」，并在指令栏上方给出提示与「在新窗口打开」按钮，不会卡死。部署细节见 `DEPLOY.md`。
+**关于嵌入播放**：魔搭创空间页面的 iframe `allow` 列表里没有 `pointer-lock`，而应用跑在跨域子域上，所以在创空间内嵌窗口里鼠标可能锁不住。游戏检测到后会切成「按住左键拖动视角」并浮出提示条；同时开始页会多出「在新窗口打开」。想要标准 FPS 手感，直接开直链 `https://try888-<空间名>.ms.show/`。部署细节见 `DEPLOY.md`。
 
 ---
 

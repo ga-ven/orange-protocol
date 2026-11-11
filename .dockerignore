@@ -1,0 +1,10 @@
+.git
+.gitignore
+.gitattributes
+.workbuddy
+node_modules
+checks
+screenshots
+LICENSES
+*.md
+!README.md
