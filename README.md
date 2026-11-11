@@ -167,11 +167,18 @@ node server.mjs          # → http://127.0.0.1:8790/
 ```bash
 node checks/flow.mjs       # 31 项真浏览器断言：波次 / 指令解析 / 记忆 / 射击 / 胜败
 node checks/soak.mjs       # 长局稳定性：不渲染，用固定步长推进 150 秒，查卡死与波次停滞
+node checks/baseline.mjs   # 难度基线：挂机 vs 站桩满输出，量「玩家是不是必需品」
 node checks/shots.mjs      # 生成 screenshots/ 下的定版截图
 node checks/showcase.mjs   # 生成 checks/ 下的展示截图
 ```
 
 `flow.mjs` 会在真实 Chrome 里跑完整一局，覆盖三波敌人构成、复合中文指令的逐人派发、队友记忆写入、射线命中与弹药消耗、胜利与失败两条结局，并断言全程无 console 报错。
+
+`baseline.mjs` 跑两种极端玩家：完全不操作，以及「站桩 + 每帧对准最近敌人」的满输出玩家，输出通关耗时与核心剩余血量。当前实测是挂机 104 秒通关（核心 113/160）、满输出 70 秒通关（核心 160/160）。
+
+> 写自家测试时注意：不渲染的固定步长循环里必须手动 `scene.updateMatrixWorld(true)`。
+> 否则 `Raycaster` 用的是上一帧渲染时的矩阵，敌人位置在变而矩阵不动，表现为「疯狂开火、枪枪脱靶」
+> —— 我第一版基线脚本就是这么跑出 `515 发 0 命中` 的假数据的。
 
 `soak.mjs` 用 `SOAK_SECONDS` 控制时长（默认 150 秒），检查：队友是否卡在掩体上、敌人能否真的推进到核心、是否出现 NaN 坐标、波次是否会停滞。它抓到过一个致命缺陷——敌人因为读错字段名而**从不攻击**，见 `SUBMISSION.md` 4.5 节。
 

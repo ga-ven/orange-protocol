@@ -82,11 +82,12 @@ let breakState = await page.evaluate(() => ({
   phase: window.__ORANGE_GAME__.wavePhase,
   timer: window.__ORANGE_GAME__.waveTimer,
   core: window.__ORANGE_GAME__.world.core.health,
+  coreMax: window.__ORANGE_GAME__.world.core.maxHealth,
   wave: window.__ORANGE_GAME__.currentWaveIndex,
 }));
 assert(breakState.phase === 'break', 'clearing wave enters break');
 assert(breakState.timer > 5, 'break has a usable countdown');
-assert(breakState.core >= 160, 'core is repaired between waves');
+assert(breakState.core >= breakState.coreMax, 'core is repaired between waves');
 
 // Force next wave and verify second wave composition includes ranged units.
 await page.evaluate(() => {
