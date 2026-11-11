@@ -2067,16 +2067,55 @@ body.is-playing .menu-scene-label {
   left: 50%;
   bottom: 4px;
   transform: translateX(-50%);
-  padding: 3px 8px;
+  padding: 3px 9px;
   border-radius: 999px;
   background: rgba(255, 248, 235, 0.55);
-  color: rgba(74, 48, 36, 0.5);
-  font-size: 6px;
+  color: rgba(74, 48, 36, 0.55);
+  font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.05em;
   white-space: nowrap;
   pointer-events: none;
   backdrop-filter: blur(8px);
+}
+
+.lock-fallback {
+  position: absolute;
+  left: 50%;
+  bottom: 96px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px 7px 14px;
+  border-radius: 999px;
+  background: rgba(255, 244, 227, 0.94);
+  border: 1px solid rgba(245, 107, 38, 0.28);
+  box-shadow: 0 10px 26px rgba(184, 92, 38, 0.16);
+  color: #6d4331;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: auto;
+}
+
+.lock-fallback b {
+  color: var(--orange-deep, #d94b12);
+}
+
+.lock-fallback button {
+  padding: 5px 11px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--orange);
+  color: #fff6e6;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.lock-fallback button:hover {
+  background: #e85c22;
 }
 
 /* -------------------------------------------------------------------------- */

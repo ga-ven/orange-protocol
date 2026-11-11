@@ -66,6 +66,9 @@ export class Game {
     this.projectiles = [];
     this.effects = [];
     this.input = { keys: new Set(), mouseDown: false };
+    this.dragLook = false;
+    this.dragging = false;
+    this.lockBlocked = false;
     this.clock = new THREE.Clock();
     this.raycaster = new THREE.Raycaster();
     this.raycaster.far = CONFIG.weapon.range;
@@ -137,19 +140,20 @@ export class Game {
         this.pause();
       }
     });
+    // iframe 里拿不到指针锁时，退化成「按住左键拖动视角」，保证游戏仍然可玩
+    document.addEventListener('pointerlockerror', () => this.enableDragLook());
     document.addEventListener('mousemove', (event) => {
-      if (
-        document.pointerLockElement === this.canvas &&
-        this.state === 'playing' &&
-        !this.ui?.radioOpen
-      ) {
+      if (this.state !== 'playing' || this.ui?.radioOpen) return;
+      const locked = document.pointerLockElement === this.canvas;
+      if (locked || (this.dragLook && this.dragging)) {
         this.player.applyLook(event.movementX, event.movementY, CONFIG.player.mouseSensitivity);
       }
     });
     document.addEventListener('mousedown', (event) => {
       if (event.button !== 0) return;
       if (this.state === 'playing' && !this.ui?.radioOpen) {
-        if (document.pointerLockElement !== this.canvas) {
+        this.dragging = true;
+        if (document.pointerLockElement !== this.canvas && !this.lockBlocked) {
           this.requestPointerLock();
         }
         this.input.mouseDown = true;
@@ -157,10 +161,13 @@ export class Game {
       }
     });
     document.addEventListener('mouseup', (event) => {
-      if (event.button === 0) this.input.mouseDown = false;
+      if (event.button === 0) {
+        this.input.mouseDown = false;
+        this.dragging = false;
+      }
     });
     this.canvas.addEventListener('click', () => {
-      if (this.state === 'playing' && document.pointerLockElement !== this.canvas) {
+      if (this.state === 'playing' && document.pointerLockElement !== this.canvas && !this.lockBlocked) {
         this.requestPointerLock();
       }
     });
@@ -174,11 +181,13 @@ export class Game {
     });
     window.addEventListener('blur', () => {
       this.input.mouseDown = false;
+      this.dragging = false;
       this.input.keys.clear();
     });
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
         this.input.mouseDown = false;
+        this.dragging = false;
         this.input.keys.clear();
         if (this.state === 'playing') this.pause();
       }
@@ -234,18 +243,25 @@ export class Game {
     this.input.keys.add(event.code);
   }
 
+  enableDragLook() {
+    if (this.dragLook) return;
+    this.dragLook = true;
+    this.lockBlocked = true;
+    this.ui?.showLockFallback();
+  }
+
   requestPointerLock() {
-    if (document.pointerLockElement === this.canvas) return;
+    if (document.pointerLockElement === this.canvas || this.lockBlocked) return;
     try {
       const result = this.canvas.requestPointerLock();
       if (result && typeof result.catch === 'function') {
         result.catch(() => {
-          // Browsers may reject a synthetic pointer lock request. Clicking the
-          // canvas retries without interrupting the run.
+          // 浏览器拒绝合成事件触发的指针锁定：退回拖拽视角，不中断这一局
+          this.enableDragLook();
         });
       }
     } catch (error) {
-      // Keep the game playable with keyboard even if pointer lock is blocked.
+      this.enableDragLook();
     }
   }
 

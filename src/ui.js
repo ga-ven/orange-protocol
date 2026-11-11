@@ -28,6 +28,9 @@ export class UI {
       startButton: $('start-button'),
       intelToggle: $('intel-toggle'),
       intelDrawer: $('intel-drawer'),
+      openWindow: $('open-window'),
+      lockFallback: $('lock-fallback'),
+      lockFallbackOpen: $('lock-fallback-open'),
       muteStart: $('mute-start'),
       resume: $('resume-button'),
       restart: $('restart-button'),
@@ -105,6 +108,17 @@ export class UI {
       this.el.intelToggle.textContent = open ? '收起任务简报' : '查看任务简报';
       this.game.audio.uiClick();
     });
+    // 被嵌在 iframe 里时（例如魔搭创空间），提示可以开新窗口，那里鼠标锁定最稳
+    const embedded = window.self !== window.top;
+    if (embedded && this.el.openWindow) {
+      this.el.openWindow.hidden = false;
+      this.el.openWindow.addEventListener('click', () => {
+        window.open(window.location.href, '_blank', 'noopener');
+      });
+    }
+    this.el.lockFallbackOpen?.addEventListener('click', () => {
+      window.open(window.location.href, '_blank', 'noopener');
+    });
     this.el.muteStart?.addEventListener('click', () => this.toggleMute());
     this.el.resume?.addEventListener('click', () => this.game.resume());
     this.el.restart?.addEventListener('click', () => {
@@ -172,6 +186,11 @@ export class UI {
     this.el.hud.classList.remove('hidden');
     this.el.menuSceneLabel.style.display = 'none';
     document.body.classList.add('is-playing');
+  }
+
+  // 指针锁定被浏览器拦截时（常见于 iframe 嵌入），提示改用拖拽视角
+  showLockFallback() {
+    this.el.lockFallback?.classList.remove('hidden');
   }
 
   showStart() {
