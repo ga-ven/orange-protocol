@@ -51,13 +51,13 @@ const banter = await page.evaluate(async () => {
   const ally = game.allies[0];
   const before = ally.lastSaidText;
   game.requestBanter(ally, 2);
-  for (let i = 0; i < 120; i += 1) {
+  for (let i = 0; i < 150; i += 1) {
     await new Promise((r) => setTimeout(r, 100));
     if (ally.lastSaidText && ally.lastSaidText !== before) {
       return { changed: true, text: ally.lastSaidText, elapsedMs: (i + 1) * 100 };
     }
   }
-  return { changed: false, text: ally.lastSaidText, elapsedMs: 12000 };
+  return { changed: false, text: ally.lastSaidText, elapsedMs: 15000 };
 });
 if (enabled) {
   if (!banter.changed) failures.push('配了令牌但波次提醒没有落到队友嘴里');
@@ -120,11 +120,11 @@ const debrief = await page.evaluate(async () => {
   game.endGame(true);
   const label = () => document.querySelector('#result-insight span')?.textContent || '';
   const body = () => document.querySelector('#result-insight p')?.textContent || '';
-  for (let i = 0; i < 200; i += 1) {
+  for (let i = 0; i < 320; i += 1) {
     await new Promise((r) => setTimeout(r, 100));
     if (label().includes('大模型')) return { replaced: true, label: label(), text: body(), elapsedMs: (i + 1) * 100 };
   }
-  return { replaced: false, label: label(), text: body(), before, elapsedMs: 20000 };
+  return { replaced: false, label: label(), text: body(), before, elapsedMs: 32000 };
 });
 if (enabled) {
   if (!debrief.replaced) failures.push('配了令牌但结算复盘没有被模型内容替换');

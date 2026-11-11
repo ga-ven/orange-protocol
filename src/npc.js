@@ -1,7 +1,9 @@
 // 大模型只负责「说话」，不参与任何数值。
 // 服务端没配令牌、接口超时、返回乱码——一律返回 null，调用方继续用本地模板。
 const PROBE_TIMEOUT = 4000;
-const ASK_TIMEOUT = 16000;
+// 必须比服务端的 NPC_TIMEOUT_MS（20s）长，否则会出现"服务端还在算、客户端先放弃"，
+// 表现就是明明没报错却拿不到文案。实测复盘偶发 16.8s，卡在旧的 16s 上就会丢。
+const ASK_TIMEOUT = 30000;
 
 export class NpcVoice {
   constructor(endpoint = '/api/npc') {

@@ -34,7 +34,7 @@ const DEV_ONLY = new Set(['checks', 'screenshots', 'node_modules']);
 const NPC_KEY = process.env.MODELSCOPE_API_KEY || '';
 const NPC_MODEL = process.env.NPC_MODEL || 'Qwen/Qwen3.8-Flash-Next';
 const NPC_UPSTREAM = process.env.NPC_UPSTREAM || 'https://api-inference.modelscope.cn/v1/chat/completions';
-const NPC_TIMEOUT_MS = Number(process.env.NPC_TIMEOUT_MS || 25000);
+const NPC_TIMEOUT_MS = Number(process.env.NPC_TIMEOUT_MS || 20000);
 const NPC_INTENTS = ['follow', 'defend', 'flank', 'focus', 'retreat', 'hold'];
 
 const NPC_PROMPTS = {
