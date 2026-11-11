@@ -156,11 +156,14 @@ node server.mjs          # → http://127.0.0.1:8790/
 
 ```bash
 node checks/flow.mjs       # 31 项真浏览器断言：波次 / 指令解析 / 记忆 / 射击 / 胜败
+node checks/soak.mjs       # 长局稳定性：不渲染，用固定步长推进 150 秒，查卡死与波次停滞
 node checks/shots.mjs      # 生成 screenshots/ 下的定版截图
 node checks/showcase.mjs   # 生成 checks/ 下的展示截图
 ```
 
 `flow.mjs` 会在真实 Chrome 里跑完整一局，覆盖三波敌人构成、复合中文指令的逐人派发、队友记忆写入、射线命中与弹药消耗、胜利与失败两条结局，并断言全程无 console 报错。
+
+`soak.mjs` 用 `SOAK_SECONDS` 控制时长（默认 150 秒），检查：队友是否卡在掩体上、敌人能否真的推进到核心、是否出现 NaN 坐标、波次是否会停滞。它抓到过一个致命缺陷——敌人因为读错字段名而**从不攻击**，见 `SUBMISSION.md` 4.5 节。
 
 ---
 

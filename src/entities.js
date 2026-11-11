@@ -639,6 +639,8 @@ export class Ally {
     this.moving = false;
     this.flash = 0;
     this.chatterCooldown = rand(4, 9);
+    this.lastSaidText = '';
+    this.lastSaidAt = -999;
     this.assignedAngle = options.index === 0 ? Math.PI * 0.8 : -Math.PI * 0.2;
     this.memory = {
       commandCounts: {},
@@ -733,6 +735,10 @@ export class Ally {
 
   say(text, game) {
     if (!text) return;
+    // 同一句台词短时间内不重复播报，避免刷屏
+    if (text === this.lastSaidText && game.elapsed - this.lastSaidAt < 8) return;
+    this.lastSaidText = text;
+    this.lastSaidAt = game.elapsed;
     this.chatterCooldown = Math.max(this.chatterCooldown, 2.5);
     game.ui.allySpeak(this.name, text, this.color === COLORS.orange ? 'orange' : 'teal');
   }
