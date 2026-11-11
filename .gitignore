@@ -1,4 +1,5 @@
 node_modules/
 checks/*.png
+checks/_*.txt
 .DS_Store
 *.log

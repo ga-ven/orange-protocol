@@ -200,6 +200,7 @@ node checks/showcase.mjs   # 生成 checks/ 下的展示截图
 
 ## 开发记录
 
-- `DEPLOY.md`：部署到魔搭创空间（Static）的步骤与验收清单
+- `DEPLOY.md`：部署到魔搭创空间（Docker 空间）的完整流程与验收清单
+- `scripts/deploy.mjs`：一键部署脚本（建空间 → 推 master → 触发部署 → 轮询日志 → 直链自检）
 - `SUBMISSION.md`：参赛手记、创作过程、演示视频脚本、提交清单
 - `D:/coding/dailywork/AI造游戏_FPS参赛方案_20261111.md`（仓库外）：立项方案与拿奖策略
