@@ -14,6 +14,9 @@ app_port: 7860
 
 参赛作品：**AI+∞ 开发者创作大赛 第三期「AI 造游戏」**
 
+**在线试玩**：<https://modelscope.cn/studios/try888/orange-protocol>（魔搭创空间，无需登录）
+本地跑：`node server.mjs` → <http://127.0.0.1:8790>
+
 ---
 
 ## 它是什么
