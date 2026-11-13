@@ -60,6 +60,7 @@ export const CONFIG = {
       name: '第一波 · 探路者',
       subtitle: '小型机器人正在接近能源核心',
       brief: '先用 1—6 下达指令，试试「守核心」和「跟我走」。',
+      briefTouch: '点底部的指令按钮，试试「守核」和「跟我走」。',
       spawnInterval: 1.35,
       enemies: [
         { type: 'runner', count: 5 },
@@ -69,6 +70,7 @@ export const CONFIG = {
       name: '第二波 · 泡泡炮阵',
       subtitle: '远程单位出现，别让它们站稳脚跟',
       brief: '提示：用「包抄」逼出远程单位，用「集火」快速清掉它们。',
+      briefTouch: '提示：点「包抄」逼出远程单位，点「集火」快速清掉它们。',
       spawnInterval: 1.2,
       enemies: [
         { type: 'runner', count: 3 },
@@ -79,6 +81,7 @@ export const CONFIG = {
       name: '第三波 · 大块头登场',
       subtitle: '精英守卫压境，守住最后一分钟',
       brief: '最终波：保留「橘光脉冲」，关键时刻能救下核心。',
+      briefTouch: '最终波：留着「脉冲」按钮，关键时刻能救下核心。',
       spawnInterval: 1.3,
       enemies: [
         { type: 'runner', count: 3 },

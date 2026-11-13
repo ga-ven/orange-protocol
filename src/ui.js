@@ -2,6 +2,9 @@ import { CONFIG, INTENT_LABELS } from './config.js';
 
 const $ = (id) => document.getElementById(id);
 
+// 触屏的卡片只有一百来像素宽，用 CONFIG 里的两字短标签（守核 / 包抄 / 集火…）
+const SHORT_ORDER = Object.fromEntries(CONFIG.commands.map((command) => [command.id, command.short]));
+
 function formatTime(seconds) {
   const minutes = Math.floor(seconds / 60);
   const remaining = Math.floor(seconds % 60);
@@ -74,6 +77,8 @@ export class UI {
       hitmarker: $('hitmarker'),
       interact: $('interact-prompt'),
       interactFill: $('interact-fill'),
+      touchSkill: $('touch-skill'),
+      touchInteract: $('touch-interact'),
       damageOverlay: $('damage-overlay'),
       minimap: $('minimap'),
       objective: $('objective-chip'),
@@ -330,6 +335,12 @@ export class UI {
     this.el.skillButton.classList.toggle('cooling', cooldown > 0);
     this.el.skillButton.classList.toggle('ready', cooldown <= 0);
     this.el.skillStatus.textContent = cooldown <= 0 ? '就绪' : `${Math.ceil(cooldown)} 秒`;
+    // 触屏没有 HUD 里的技能卡，冷却画在触控按钮自己的填充条上
+    if (this.el.touchSkill) {
+      this.el.touchSkill.classList.toggle('cooling', cooldown > 0);
+      this.el.touchSkill.style.setProperty('--cd', (1 - ratio).toFixed(3));
+      this.el.touchSkill.textContent = cooldown <= 0 ? '脉冲' : `${Math.ceil(cooldown)}s`;
+    }
   }
 
   setObjective(text) {
@@ -346,7 +357,9 @@ export class UI {
     this.el.allyCards.innerHTML = allies
       .map((ally) => {
         const healthRatio = Math.max(0, ally.health / ally.maxHealth) * 100;
-        const order = ally.downed ? '失能' : INTENT_LABELS[ally.order] || '守核心';
+        const order = ally.downed
+          ? '失能'
+          : (this.game.touch ? SHORT_ORDER[ally.order] : INTENT_LABELS[ally.order]) || '守核心';
         return `
           <div class="ally-card ${ally.color === 0xff7a2f ? 'orange' : 'teal'} ${ally.downed ? 'downed' : ''}">
             <div class="card-avatar">${ally.name.slice(0, 1)}</div>
@@ -455,18 +468,31 @@ export class UI {
   }
 
   showRevivePrompt(show, name = '', progress = 0) {
+    const touch = Boolean(this.game.touch);
     this.el.interact.classList.toggle('hidden', !show);
+    // 触屏没有 E 键：把中央那行提示换成右下角一个「按住扶起」按钮
+    document.body.classList.toggle('has-revive', show && touch);
     if (show) {
       const span = this.el.interact.querySelector('span');
-      if (span) span.textContent = `${name || '队友'}失去行动能力 · 按住 E 扶起`;
-      this.el.interactFill.style.width = `${Math.max(0, Math.min(1, progress)) * 100}%`;
+      if (span) {
+        span.textContent = touch
+          ? `${name || '队友'}失去行动能力 · 按住「扶起」`
+          : `${name || '队友'}失去行动能力 · 按住 E 扶起`;
+      }
+      if (touch && this.el.touchInteract) {
+        this.el.touchInteract.textContent = `按住 · 扶起${name || '队友'}`;
+      }
+      this.setInteractProgress(progress);
     } else {
       this.el.interactFill.style.width = '0%';
+      this.el.touchInteract?.style.setProperty('--revive', '0');
     }
   }
 
   setInteractProgress(progress) {
-    this.el.interactFill.style.width = `${Math.max(0, Math.min(1, progress)) * 100}%`;
+    const value = Math.max(0, Math.min(1, progress));
+    this.el.interactFill.style.width = `${value * 100}%`;
+    this.el.touchInteract?.style.setProperty('--revive', value.toFixed(3));
   }
 
   openRadio() {
@@ -494,10 +520,13 @@ export class UI {
   closeRadio(resume = true) {
     if (!this.radioOpen) {
       this.el.radio.classList.add('hidden');
+      this.el.radioInput.blur();
       return;
     }
     this.radioOpen = false;
     this.el.radio.classList.add('hidden');
+    // 触屏上必须主动失焦，否则输入框还握着焦点、软键盘不肯收回去
+    this.el.radioInput.blur();
     if (resume) this.game.leaveRadioMode();
   }
 

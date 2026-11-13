@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
   <meta name="theme-color" content="#ff7a2f">
   <meta name="description" content="橘光行动：AI 协防——一款可以用自然语言指挥 AI 队友的协作 FPS。">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%23f56b26'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-size='40' font-weight='800' fill='%23fff4df'%3EO%3C/text%3E%3C/svg%3E">
@@ -61,11 +61,15 @@
           </div>
           <div id="intel-drawer" class="intel-drawer" aria-hidden="true">
             <div class="intel-item"><b>01</b><span>守住中央能源核心，撑过三波进攻。</span></div>
-            <div class="intel-item"><b>02</b><span>按 1—6 快速下令，按 T 输入自己的战术口令。</span></div>
+            <div class="intel-item"><b>02</b>
+              <span class="desktop-only">按 1—6 快速下令，按 T 输入自己的战术口令。</span>
+              <span class="touch-only">点底部 1—6 按钮下令，点「电台」输入自己的战术口令。</span>
+            </div>
             <div class="intel-item"><b>03</b><span>队友会记住哪一侧漏怪，并把记忆带到下一波。</span></div>
           </div>
           <p class="demo-note">
-            建议使用桌面版 Chrome / Edge · 鼠标点击后进入第一人称
+            <span class="desktop-only">建议使用桌面版 Chrome / Edge · 鼠标点击后进入第一人称</span>
+            <span class="touch-only">手机请横屏游玩 · 左下摇杆走位 · 右半屏滑动转视角</span>
           </p>
         </div>
 
@@ -116,13 +120,21 @@
             </div>
           </div>
 
-          <div class="control-strip">
+          <div class="control-strip desktop-only">
             <div><kbd>WASD</kbd><span>移动</span></div>
             <div><kbd>左键</kbd><span>射击</span></div>
             <div><kbd>1—6</kbd><span>下令</span></div>
             <div><kbd>T</kbd><span>战术电台</span></div>
             <div><kbd>Q</kbd><span>脉冲</span></div>
             <div><kbd>R</kbd><span>换弹</span></div>
+          </div>
+          <div class="control-strip touch-only">
+            <div><kbd>左侧</kbd><span>摇杆走位</span></div>
+            <div><kbd>右侧</kbd><span>滑动视角</span></div>
+            <div><kbd>开火</kbd><span>按住射击</span></div>
+            <div><kbd>1—6</kbd><span>下令</span></div>
+            <div><kbd>电台</kbd><span>说话</span></div>
+            <div><kbd>脉冲</kbd><span>技能</span></div>
           </div>
         </aside>
       </main>
@@ -251,7 +263,8 @@
           <button id="restart-button" class="ghost-button" type="button">重新开始</button>
           <button id="menu-button" class="text-button" type="button">返回行动页</button>
         </div>
-        <div class="pause-tip"><kbd>Esc</kbd> 继续 · 鼠标点击画面可重新锁定视角</div>
+        <div class="pause-tip desktop-only"><kbd>Esc</kbd> 继续 · 鼠标点击画面可重新锁定视角</div>
+        <div class="pause-tip touch-only">点「继续行动」回到战场 · 触屏不需要重新锁定视角</div>
       </div>
     </section>
 
@@ -315,11 +328,35 @@
       </div>
     </section>
 
+    <!-- 触屏层：只在手机/平板上显示，挂在 #app 下、不受 HUD 缩放影响 -->
+    <div id="touch-layer" class="touch-layer hidden">
+      <button id="touch-pause" class="touch-pause" type="button" aria-label="暂停">Ⅱ</button>
+      <div id="stick-zone" class="stick-zone">
+        <div class="stick-base">
+          <div id="stick-knob" class="stick-knob"></div>
+        </div>
+      </div>
+      <button id="touch-interact" class="touch-interact" type="button">按住 · 扶起队友</button>
+      <div class="touch-actions">
+        <div class="touch-stack">
+          <button id="touch-radio" class="touch-mini" type="button">电台</button>
+          <button id="touch-reload" class="touch-mini" type="button">换弹</button>
+          <button id="touch-skill" class="touch-mini touch-mini-skill" type="button">脉冲</button>
+        </div>
+        <button id="touch-fire" class="touch-fire" type="button"><span>开火</span></button>
+      </div>
+    </div>
+
     <div id="mobile-warning" class="mobile-warning">
-      <div class="mobile-card">
+      <div class="mobile-card mobile-card-rotate">
+        <span class="eyebrow">ROTATE TO PLAY</span>
+        <h2>请把手机横过来</h2>
+        <p>横屏后左下是走位摇杆、右下滑动转视角、右下角开火。指令按钮在底部中间。</p>
+      </div>
+      <div class="mobile-card mobile-card-desktop">
         <span class="eyebrow">DESKTOP MISSION</span>
-        <h2>请用电脑打开</h2>
-        <p>这是一款需要鼠标和键盘的 3D 协作 FPS。桌面版 Chrome 或 Edge 能获得完整体验。</p>
+        <h2>窗口太窄了</h2>
+        <p>把浏览器窗口拉宽即可开始。这是一款 3D 协作 FPS，需要鼠标和键盘。</p>
       </div>
     </div>
   </div>

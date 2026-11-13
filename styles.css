@@ -2608,8 +2608,44 @@ body.is-playing .menu-scene-label {
 /* Mobile                                                                     */
 /* -------------------------------------------------------------------------- */
 
+/* 触屏上才有 / 桌面上才有的文案。JS 用 body.is-touch 标记，比纯媒体查询可靠：
+   触屏笔记本（pointer: fine）会走桌面路径，而 ?touch=1 又能强制走触屏路径。 */
+.touch-only {
+  display: none;
+}
+
+body.is-touch .touch-only {
+  display: inline;
+}
+
+body.is-touch .desktop-only {
+  display: none !important;
+}
+
 .mobile-warning {
   display: none;
+}
+
+/* 桌面窗口太窄：别硬挤，提示拉宽 */
+@media (max-width: 860px) {
+  body:not(.is-touch) .mobile-warning {
+    display: grid;
+  }
+
+  body:not(.is-touch) .mobile-card-rotate {
+    display: none;
+  }
+}
+
+/* 触屏竖屏：请横过来 */
+@media (orientation: portrait) {
+  body.is-touch .mobile-warning {
+    display: grid;
+  }
+
+  body.is-touch .mobile-card-desktop {
+    display: none;
+  }
 }
 
 @media (max-width: 1180px) {
@@ -2740,7 +2776,6 @@ body.is-playing .menu-scene-label {
 
 @media (max-width: 860px), (pointer: coarse) {
   .mobile-warning {
-    display: grid;
     place-items: center;
     position: absolute;
     inset: 0;
@@ -2849,6 +2884,658 @@ body.is-playing .menu-scene-label {
 
   .result-actions {
     padding: 16px;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Touch play (横屏手机 / 平板)                                                */
+/* -------------------------------------------------------------------------- */
+/* 触屏这套 HUD 用真实像素排，所以 game.resize() 在触屏上把 --hud-scale 固定成 1。
+   尺寸全部跟视口高度走（横屏手机的可视高度只有 320—430px），再用 safe-area
+   避开刘海和.home 条——iPhone 横屏时左边 44px 是拿不到触摸的。 */
+
+body.is-touch {
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --stick-size: clamp(104px, 38vh, 150px);
+  --fire-size: clamp(72px, 26vh, 104px);
+  --mini-h: clamp(34px, 11vh, 44px);
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+body.is-touch #app {
+  height: 100dvh;
+}
+
+body.is-touch #game-canvas {
+  touch-action: none;
+}
+
+/* ---------------------------------------------------------------- 触控层 */
+.touch-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 15; /* HUD 是 10、弹窗是 20：夹在中间，弹窗能盖住它 */
+  display: none;
+  pointer-events: none;
+}
+
+body.is-touch.is-playing .touch-layer {
+  display: block;
+}
+
+/* 暂停 / 电台打开时整层收起来，免得隔着毛玻璃看到摇杆 */
+body.is-touch:has(#pause-screen:not(.hidden)) .touch-layer,
+body.is-touch:has(#radio-modal:not(.hidden)) .touch-layer {
+  display: none;
+}
+
+.stick-zone {
+  position: absolute;
+  left: calc(var(--safe-l) + 4px);
+  bottom: calc(var(--safe-b) + 4px);
+  display: grid;
+  place-items: center;
+  width: var(--stick-size);
+  height: var(--stick-size);
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.stick-base {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 86%;
+  height: 86%;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 42%, rgba(255, 250, 240, 0.26), rgba(255, 248, 235, 0.08));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 8px 22px rgba(80, 44, 22, 0.12);
+  backdrop-filter: blur(4px);
+}
+
+.stick-knob {
+  width: 46%;
+  height: 46%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 42% 34%, #ffd7a8, var(--orange) 60%, var(--orange-deep));
+  box-shadow: 0 4px 14px rgba(160, 60, 16, 0.34);
+  will-change: transform;
+  transition: transform 130ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.stick-zone.is-active .stick-knob {
+  transition: none;
+}
+
+.touch-fire {
+  position: absolute;
+  right: calc(var(--safe-r) + 8px);
+  bottom: calc(var(--safe-b) + 8px);
+  display: grid;
+  place-items: center;
+  width: var(--fire-size);
+  height: var(--fire-size);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  background: radial-gradient(circle at 44% 34%, rgba(255, 216, 176, 0.96), rgba(245, 107, 38, 0.92) 56%, rgba(217, 75, 18, 0.95));
+  box-shadow: 0 10px 26px rgba(150, 55, 14, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.26);
+  color: #fff6e8;
+  font-size: clamp(12px, 3.4vh, 16px);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  pointer-events: auto;
+  touch-action: none;
+  transition: transform 90ms ease, box-shadow 90ms ease;
+}
+
+.touch-fire.is-active {
+  transform: scale(0.94);
+  box-shadow: 0 3px 12px rgba(150, 55, 14, 0.4), inset 0 0 0 3px rgba(255, 255, 255, 0.42);
+}
+
+.touch-stack {
+  position: absolute;
+  right: calc(var(--safe-r) + 8px);
+  bottom: calc(var(--safe-b) + var(--fire-size) + 16px);
+  display: flex;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.touch-mini {
+  width: calc(var(--mini-h) * 1.34);
+  height: var(--mini-h);
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 11px;
+  background: rgba(255, 248, 235, 0.84);
+  box-shadow: 0 6px 16px rgba(123, 65, 34, 0.16);
+  color: var(--ink);
+  font-size: clamp(10px, 2.8vh, 12px);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  pointer-events: auto;
+  touch-action: none;
+  backdrop-filter: blur(10px);
+  transition: transform 90ms ease, opacity 160ms ease;
+}
+
+.touch-mini:active {
+  transform: scale(0.94);
+}
+
+.touch-mini-skill {
+  --cd: 1;
+  background:
+    linear-gradient(to top, rgba(245, 107, 38, 0.17) calc(var(--cd) * 100%), rgba(255, 248, 235, 0.84) calc(var(--cd) * 100%));
+  transition: transform 90ms ease, opacity 160ms ease, border-color 200ms ease;
+}
+
+.touch-mini-skill.cooling {
+  opacity: 0.66;
+}
+
+.touch-mini-skill:not(.cooling) {
+  border-color: rgba(245, 107, 38, 0.45);
+}
+
+.touch-pause {
+  position: absolute;
+  left: calc(var(--safe-l) + 8px);
+  top: calc(var(--safe-t) + 8px);
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 12px 12px 12px 4px;
+  background: rgba(255, 248, 235, 0.82);
+  box-shadow: 0 6px 16px rgba(123, 65, 34, 0.16);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 900;
+  pointer-events: auto;
+  touch-action: none;
+  backdrop-filter: blur(10px);
+}
+
+.touch-interact {
+  --revive: 0;
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--safe-b) + 74px);
+  display: none;
+  align-items: center;
+  height: 42px;
+  padding: 0 20px;
+  transform: translateX(-50%);
+  border: 1px solid rgba(245, 107, 38, 0.42);
+  border-radius: 999px;
+  background:
+    linear-gradient(to right, rgba(245, 107, 38, 0.34) calc(var(--revive) * 100%), rgba(255, 244, 227, 0.94) calc(var(--revive) * 100%));
+  box-shadow: 0 8px 22px rgba(123, 65, 34, 0.2);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+body.has-revive .touch-interact {
+  display: flex;
+}
+
+.touch-interact.is-active {
+  box-shadow: inset 0 0 0 2px rgba(245, 107, 38, 0.4), 0 8px 22px rgba(123, 65, 34, 0.2);
+}
+
+/* ------------------------------------------------------------ HUD 重排 */
+/* 注意：这里不要重置 .hud 的 transform —— 手机上 --hud-scale 算出来就是 1，
+   平板横屏才会放大一点，重置掉就没法放大了。 */
+
+body.is-touch .hud-top-left {
+  left: calc(var(--safe-l) + 56px);
+  top: calc(var(--safe-t) + 10px);
+  gap: 12px;
+}
+
+body.is-touch .mini-mark {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px 8px 8px 3px;
+  font-size: 14px;
+}
+
+body.is-touch .mini-wordmark b {
+  font-size: 11px;
+}
+
+body.is-touch .mini-wordmark span:not(.mini-mark) {
+  font-size: 6px;
+  letter-spacing: 0.1em;
+}
+
+body.is-touch .score-line {
+  padding-left: 12px;
+}
+
+body.is-touch .score-line span {
+  font-size: 6px;
+}
+
+body.is-touch .score-line b {
+  font-size: 15px;
+}
+
+body.is-touch .wave-pill {
+  top: calc(var(--safe-t) + 8px);
+  width: 188px;
+  padding: 6px 10px 7px;
+  border-radius: 11px 11px 11px 4px;
+}
+
+body.is-touch .wave-pill span {
+  font-size: 7px;
+}
+
+body.is-touch .wave-pill strong {
+  font-size: 11px;
+}
+
+body.is-touch .wave-pill small {
+  font-size: 7px;
+}
+
+body.is-touch .hud-top-right {
+  top: calc(var(--safe-t) + 8px);
+  right: calc(var(--safe-r) + 10px);
+  gap: 6px;
+}
+
+body.is-touch .core-card {
+  width: 148px;
+  padding: 7px 10px;
+  border-radius: 11px 11px 11px 4px;
+}
+
+body.is-touch .core-card-title {
+  font-size: 8px;
+}
+
+body.is-touch .core-card-foot {
+  font-size: 6px;
+}
+
+body.is-touch .core-bar {
+  height: 4px;
+}
+
+body.is-touch .minimap-card {
+  display: none;
+}
+
+body.is-touch .vitals {
+  left: calc(var(--safe-l) + 10px);
+  top: calc(var(--safe-t) + 44px);
+  bottom: auto;
+  width: 176px;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 11px 11px 11px 4px;
+}
+
+body.is-touch .commander-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px 8px 8px 3px;
+  font-size: 12px;
+}
+
+body.is-touch .vitals-label {
+  font-size: 7px;
+}
+
+body.is-touch .health-bar {
+  height: 4px;
+  margin: 3px 0;
+}
+
+body.is-touch .vitals-foot {
+  display: none;
+}
+
+body.is-touch .squad-panel {
+  left: calc(var(--safe-l) + 10px);
+  top: calc(var(--safe-t) + 92px);
+  width: auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+body.is-touch .squad-panel .panel-label {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1px;
+  margin: 0;
+  font-size: 6px;
+  line-height: 1.1;
+}
+
+body.is-touch .ally-cards {
+  grid-auto-flow: column;
+  gap: 5px;
+}
+
+body.is-touch .ally-card {
+  width: 116px;
+  grid-template-columns: 20px 1fr auto;
+  gap: 5px;
+  padding: 4px 6px;
+  border-radius: 9px 9px 9px 3px;
+}
+
+body.is-touch .card-avatar {
+  width: 20px;
+  height: 20px;
+  font-size: 10px;
+}
+
+body.is-touch .card-name {
+  gap: 3px;
+  font-size: 9px;
+}
+
+body.is-touch .card-name em {
+  font-size: 6px;
+}
+
+body.is-touch .card-order {
+  padding: 2px 4px;
+  font-size: 6px;
+}
+
+body.is-touch .weapon-panel {
+  right: calc(var(--safe-r) + 10px);
+  top: calc(var(--safe-t) + 68px);
+  bottom: auto;
+  width: 130px;
+  min-width: 0;
+  padding: 6px 9px;
+  border-radius: 11px 11px 4px 11px;
+}
+
+body.is-touch .weapon-kicker {
+  font-size: 6px;
+  letter-spacing: 0.02em;
+}
+
+body.is-touch .ammo-line {
+  margin-top: 1px;
+}
+
+body.is-touch .ammo-line b {
+  font-size: 24px;
+}
+
+body.is-touch .ammo-ticks {
+  height: 3px;
+}
+
+body.is-touch .reload-label {
+  font-size: 7px;
+}
+
+body.is-touch .skill-button {
+  display: none;
+}
+
+body.is-touch .kill-feed {
+  right: calc(var(--safe-r) + 10px);
+  top: calc(var(--safe-t) + 146px);
+  max-width: 150px;
+  font-size: 7px;
+}
+
+body.is-touch .objective-chip,
+body.is-touch .hud-hints {
+  display: none;
+}
+
+body.is-touch .command-dock {
+  left: 50%;
+  bottom: calc(var(--safe-b) + 8px);
+  width: auto;
+  max-width: calc(100% - 2 * var(--stick-size));
+  gap: 3px;
+  padding: 5px;
+  border-radius: 15px 15px 15px 5px;
+}
+
+body.is-touch .command-dock .radio-open,
+body.is-touch .command-dock .parser-badge {
+  display: none;
+}
+
+body.is-touch .quick-commands {
+  gap: 3px;
+}
+
+body.is-touch .quick-commands button {
+  width: 52px;
+  height: 44px;
+  gap: 2px;
+  border-radius: 8px;
+}
+
+body.is-touch .quick-commands kbd {
+  font-size: 7px;
+}
+
+body.is-touch .quick-commands button span {
+  font-size: 9px;
+}
+
+body.is-touch .dialogue-stack {
+  bottom: calc(var(--safe-b) + 120px);
+  width: min(420px, 76vw);
+  min-width: 0;
+}
+
+body.is-touch .interact-prompt {
+  display: none;
+}
+
+body.is-touch .crosshair {
+  width: 28px;
+  height: 28px;
+}
+
+body.is-touch .wave-banner {
+  top: 26%;
+  width: min(470px, 86vw);
+}
+
+body.is-touch .wave-banner h2 {
+  font-size: 26px;
+}
+
+body.is-touch .wave-banner p {
+  font-size: 10px;
+}
+
+body.is-touch .banner-brief {
+  font-size: 9px;
+}
+
+body.is-touch .lock-fallback {
+  display: none !important;
+}
+
+/* 横屏手机上开始页 / 结算页都要能在 320px 高里读完 */
+@media (max-height: 520px) {
+  body.is-touch .start-screen {
+    padding: 12px 18px 10px;
+    overflow-y: auto;
+  }
+
+  body.is-touch .landing-top {
+    padding-bottom: 0;
+  }
+
+  body.is-touch .landing-grid {
+    padding-top: 10px;
+    padding-bottom: 8px;
+    gap: 12px;
+  }
+
+  body.is-touch .hero h1 {
+    font-size: clamp(46px, 12vh, 72px);
+  }
+
+  body.is-touch .hero-lead {
+    margin-top: 6px;
+    font-size: 11px;
+    line-height: 1.6;
+  }
+
+  body.is-touch .tag-row,
+  body.is-touch .landing-footer {
+    display: none;
+  }
+
+  body.is-touch .cta-row {
+    margin-top: 10px;
+  }
+
+  body.is-touch .primary-button {
+    height: 44px;
+  }
+
+  body.is-touch .demo-note {
+    margin-top: 8px;
+    font-size: 9px;
+  }
+
+  /* 结算页原本是「左英雄块 + 右数据块」两栏，最小宽度 690px。
+     横屏手机只有 844 宽、390 高，两栏必然横向溢出，所以改成单栏竖排。 */
+  body.is-touch .result-wrap {
+    grid-template-columns: 1fr;
+    width: min(660px, 94vw);
+    min-height: 0;
+    max-height: calc(100dvh - 20px);
+    overflow-y: auto;
+  }
+
+  body.is-touch .result-hero {
+    grid-row: auto;
+    padding: 12px 18px;
+  }
+
+  body.is-touch .result-hero h2 {
+    margin: 2px 0;
+    font-size: 24px;
+  }
+
+  body.is-touch .result-hero p {
+    margin: 0;
+    font-size: 10px;
+  }
+
+  body.is-touch .result-hero .eyebrow {
+    font-size: 8px;
+  }
+
+  /* 评级挪到右上角，不再占一整行 */
+  body.is-touch .result-grade {
+    position: absolute;
+    top: 50%;
+    right: 18px;
+    width: 46px;
+    height: 46px;
+    margin: 0;
+    transform: translateY(-50%);
+    border-radius: 14px 14px 14px 4px;
+    font-size: 26px;
+  }
+
+  body.is-touch .result-stats {
+    grid-template-columns: repeat(6, 1fr);
+    padding: 6px 12px;
+  }
+
+  body.is-touch .result-stats > div {
+    min-height: 0;
+    padding: 5px 6px;
+    text-align: center;
+  }
+
+  body.is-touch .result-stats span {
+    font-size: 7px;
+  }
+
+  body.is-touch .result-stats b {
+    font-size: 14px;
+  }
+
+  body.is-touch .result-insight {
+    grid-column: 1;
+    margin: 2px 12px 6px;
+    padding: 7px 10px;
+  }
+
+  body.is-touch .result-insight span {
+    font-size: 7px;
+  }
+
+  body.is-touch .result-insight p {
+    margin: 2px 0 0;
+    font-size: 9px;
+    line-height: 1.55;
+  }
+
+  body.is-touch .result-actions {
+    padding: 8px 12px;
+  }
+
+  body.is-touch .result-actions .primary-button {
+    height: 42px;
+    min-width: 160px;
+  }
+
+  body.is-touch .result-foot {
+    display: none;
+  }
+
+  body.is-touch .modal-card {
+    padding: 18px;
+    max-width: min(520px, 92vw);
+  }
+
+  body.is-touch .pause-card h2 {
+    font-size: 26px;
+  }
+
+  body.is-touch .radio-card h2 {
+    font-size: 24px;
+  }
+
+  body.is-touch .radio-lead {
+    font-size: 10px;
+  }
+
+  body.is-touch .radio-history {
+    max-height: 62px;
+    overflow-y: auto;
   }
 }
 

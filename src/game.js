@@ -5,6 +5,7 @@ import { Ally, Enemy, EnemyProjectile, Player } from './entities.js';
 import { AudioManager } from './audio.js';
 import { buildAllyReply, describeParse, parseLocalCommand, TacticalBrain } from './ai.js';
 import { NpcVoice } from './npc.js';
+import { TouchControls } from './touch.js';
 import {
   clamp,
   damp,
@@ -14,12 +15,23 @@ import {
   raycasterHitsBox,
 } from './utils.js';
 
+// 触屏判定：pointer: coarse 覆盖手机/平板；?touch=1 / ?touch=0 用于手动覆盖（自检脚本要用）
+function detectTouch() {
+  const forced = new URLSearchParams(window.location.search).get('touch');
+  if (forced === '1') return true;
+  if (forced === '0') return false;
+  return window.matchMedia('(pointer: coarse)').matches;
+}
+
 export class Game {
   constructor(canvas) {
     this.canvas = canvas;
+    // 触屏 = 手机上跑。这里就要定下来，因为抗锯齿/像素比是创建 renderer 时的一次性决策。
+    const touchMode = detectTouch();
     this.renderer = new THREE.WebGLRenderer({
       canvas,
-      antialias: true,
+      // 手机 GPU 上 4x MSAA 太贵：关掉抗锯齿，把像素让给分辨率更划算
+      antialias: !touchMode,
       powerPreference: 'high-performance',
       alpha: false,
     });
@@ -70,7 +82,15 @@ export class Game {
     this.enemies = [];
     this.projectiles = [];
     this.effects = [];
-    this.input = { keys: new Set(), mouseDown: false };
+    this.input = {
+      keys: new Set(),
+      mouseDown: false,
+      // 触屏通道（桌面端恒为 0/false，键盘路径完全不变）
+      moveX: 0,
+      moveY: 0,
+      sprintTouch: false,
+      interactHold: false,
+    };
     this.dragLook = false;
     this.lookDragLeft = false;
     this.lookDragRight = false;
@@ -121,6 +141,10 @@ export class Game {
     this.allies[0].group.rotation.y = Math.PI;
     this.allies[1].group.rotation.y = Math.PI;
 
+    // 触屏设备上额外挂一层摇杆/按钮。桌面端不创建，鼠标键盘路径保持原样。
+    this.touch = touchMode ? new TouchControls(this) : null;
+    if (this.touch) this.touch.mount();
+
     this.bindEvents();
     this.resize();
     this.renderer.setAnimationLoop(() => this.frame());
@@ -141,7 +165,11 @@ export class Game {
 
   bindEvents() {
     window.addEventListener('resize', () => this.resize());
+    // 触屏上这些鼠标语义全都不该生效：手机点一下画布会被浏览器合成为 mousedown，
+    // 不拦住就会出现"想转视角结果开枪"，还会去请求指针锁。
+    const mouseRelevant = () => !this.touch;
     document.addEventListener('pointerlockchange', () => {
+      if (!mouseRelevant()) return;
       // 拖拽模式下本来就没有锁定，不能因为「没锁」就暂停
       if (this.dragLook) return;
       if (document.pointerLockElement !== this.canvas && this.state === 'playing') {
@@ -150,8 +178,11 @@ export class Game {
     });
     // iframe 里拿不到指针锁时（创空间就是这样），退化成「拖动视角」：
     // 右键拖动只转视角，左键仍是开火；按住左键拖动则两者同时进行。
-    document.addEventListener('pointerlockerror', () => this.enableDragLook());
+    document.addEventListener('pointerlockerror', () => {
+      if (mouseRelevant()) this.enableDragLook();
+    });
     document.addEventListener('mousemove', (event) => {
+      if (!mouseRelevant()) return;
       if (this.state !== 'playing' || this.ui?.radioOpen) return;
       const locked = document.pointerLockElement === this.canvas;
       if (locked || (this.dragLook && this.isDragLooking())) {
@@ -159,6 +190,7 @@ export class Game {
       }
     });
     document.addEventListener('mousedown', (event) => {
+      if (!mouseRelevant()) return;
       if (this.state !== 'playing' || this.ui?.radioOpen) return;
       if (event.button === 2) {
         if (this.dragLook) this.lookDragRight = true;
@@ -173,6 +205,7 @@ export class Game {
       this.audio.ensure();
     });
     document.addEventListener('mouseup', (event) => {
+      if (!mouseRelevant()) return;
       if (event.button === 0) {
         this.input.mouseDown = false;
         this.lookDragLeft = false;
@@ -183,6 +216,7 @@ export class Game {
       if (this.dragLook) event.preventDefault();
     });
     this.canvas.addEventListener('click', () => {
+      if (!mouseRelevant()) return;
       if (this.state === 'playing' && document.pointerLockElement !== this.canvas && !this.lockBlocked) {
         this.requestPointerLock();
       }
@@ -200,6 +234,7 @@ export class Game {
       this.lookDragLeft = false;
       this.lookDragRight = false;
       this.input.keys.clear();
+      this.touch?.releaseAll();
     });
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
@@ -207,6 +242,7 @@ export class Game {
         this.lookDragLeft = false;
         this.lookDragRight = false;
         this.input.keys.clear();
+        this.touch?.releaseAll();
         if (this.state === 'playing') this.pause();
       }
     });
@@ -273,6 +309,7 @@ export class Game {
   }
 
   requestPointerLock() {
+    if (this.touch) return; // 触屏没有指针锁这回事
     if (document.pointerLockElement === this.canvas || this.lockBlocked) return;
     try {
       const result = this.canvas.requestPointerLock();
@@ -290,10 +327,20 @@ export class Game {
   resize() {
     const width = window.innerWidth;
     const height = window.innerHeight;
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.35));
+    // 手机 GPU 撑不住 1.35 倍渲染分辨率；1.0 已经是"像素级"，观感损失很小、帧率收益很大
+    const ratioCap = this.touch ? 1 : 1.35;
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, ratioCap));
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
+    if (this.touch) {
+      // 触屏 HUD 用真实像素排（见 styles.css 的 body.is-touch 那套），但平板横屏有 768 高，
+      // 1:1 会让所有面板挤在角落里，所以按高度补一点放大；手机上 390 高正好乘 1。
+      const touchScale = Math.min(1.25, Math.max(1, height / 420));
+      document.documentElement.style.setProperty('--hud-scale', touchScale.toFixed(3));
+      this.touch.measure();
+      return;
+    }
     // HUD 按设计稿宽度等比缩放，避免高分屏下所有面板缩成一团
     const hudScale = Math.min(1.5, Math.max(0.82, width / 1440));
     document.documentElement.style.setProperty('--hud-scale', hudScale.toFixed(3));
@@ -330,6 +377,7 @@ export class Game {
     this.coreChatterCooldown = 0;
     this.input.mouseDown = false;
     this.input.keys.clear();
+    this.touch?.releaseAll();
 
     this.clearTransientObjects();
     this.player.reset();
@@ -389,7 +437,9 @@ export class Game {
         kicker: '行动开始',
         title: '守住能源核心',
         subtitle: '撑过三波进攻，别让核心稳定度归零。',
-        brief: '按 1—6 快速下令；按 T 打开战术电台，直接对队友说人话。',
+        brief: this.touch
+          ? '点底部 1—6 下令；点右下「电台」，直接对队友说人话。'
+          : '按 1—6 快速下令；按 T 打开战术电台，直接对队友说人话。',
       },
       5000,
     );
@@ -402,6 +452,7 @@ export class Game {
     this.pausedForRadio = false;
     this.input.mouseDown = false;
     this.input.keys.clear();
+    this.touch?.releaseAll();
     this.clearTransientObjects();
     if (document.pointerLockElement === this.canvas) document.exitPointerLock();
     this.player.viewmodel.visible = false;
@@ -424,6 +475,7 @@ export class Game {
     this.state = 'paused';
     this.input.mouseDown = false;
     this.input.keys.clear();
+    this.touch?.releaseAll();
     if (document.pointerLockElement === this.canvas) document.exitPointerLock();
     this.ui.showPause();
   }
@@ -442,6 +494,7 @@ export class Game {
     this.pausedForRadio = true;
     this.input.mouseDown = false;
     this.input.keys.clear();
+    this.touch?.releaseAll();
     if (document.pointerLockElement === this.canvas) document.exitPointerLock();
   }
 
@@ -826,7 +879,7 @@ export class Game {
         kicker: `WAVE 0${index + 1} / 0${CONFIG.waves.length}`,
         title: data.name,
         subtitle: data.subtitle,
-        brief: data.brief,
+        brief: this.touch && data.briefTouch ? data.briefTouch : data.brief,
       },
       4000,
     );
@@ -1085,7 +1138,8 @@ export class Game {
       this.reviveTarget = nearest;
       this.reviveProgress = 0;
     }
-    const holding = this.input.keys.has('KeyE');
+    // 触屏没有 E 键，走触控层的「扶起」按钮（input.interactHold）
+    const holding = this.input.keys.has('KeyE') || this.input.interactHold;
     if (holding) {
       this.reviveProgress = Math.min(1, this.reviveProgress + dt / CONFIG.ally.reviveTime);
       this.ui.setInteractProgress(this.reviveProgress);
@@ -1322,6 +1376,7 @@ export class Game {
     this.state = 'result';
     this.input.mouseDown = false;
     this.input.keys.clear();
+    this.touch?.releaseAll();
     if (document.pointerLockElement === this.canvas) document.exitPointerLock();
     if (victory) this.audio.victory();
     else this.audio.defeat();

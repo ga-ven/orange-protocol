@@ -335,10 +335,16 @@ export class Player {
     if (input.keys.has('KeyS')) forwardInput -= 1;
     if (input.keys.has('KeyD')) rightInput += 1;
     if (input.keys.has('KeyA')) rightInput -= 1;
+    // 触屏摇杆是模拟量（-1…1），和键盘叠加。桌面端这两个字段恒为 0，行为与之前完全一致。
+    forwardInput = clamp(forwardInput + (input.moveY || 0), -1, 1);
+    rightInput = clamp(rightInput + (input.moveX || 0), -1, 1);
 
-    const sprinting = input.keys.has('ShiftLeft') || input.keys.has('ShiftRight');
+    const sprinting =
+      input.keys.has('ShiftLeft') || input.keys.has('ShiftRight') || Boolean(input.sprintTouch);
     this.sprinting = sprinting && forwardInput > 0;
-    const speed = this.sprinting ? CONFIG.player.sprintSpeed : CONFIG.player.speed;
+    // 摇杆推一半就走一半速度：键盘斜向 = 1.414 会被夹到 1，所以对键盘没有副作用
+    const magnitude = Math.min(1, Math.hypot(forwardInput, rightInput));
+    const speed = (this.sprinting ? CONFIG.player.sprintSpeed : CONFIG.player.speed) * magnitude;
     const forward = this.getForward(this.tempForward);
     forward.y = 0;
     forward.normalize();
