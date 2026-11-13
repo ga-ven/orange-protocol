@@ -119,6 +119,9 @@ node scripts/deploy.mjs
 - [x] 浏览器里打开首页、`styles.css`、`src/main.js`、`vendor/three*.js` 全部 200，且 `.js` 的 MIME 是 `text/javascript`
       ⚠️ **必须用浏览器（带登录态）验收**：`.ms.show` 对匿名请求一律 403，`curl` 拿到的 403 不代表应用挂了
       —— 已确认在线的猫咪侦探所，用 `curl` 同样是 403。
+      2026-11-13 补记：403 的响应体现在会直接告诉你该用哪个地址——
+      `{"Code":10010101007,"Message":"当前接口不支持通过SDK Token直接访问，请使用API专用地址：https://studio-try888-orange-protocol.api-inference.modelscope.net"}`。
+      那个 api-inference 地址同样要求令牌（匿名 401），所以**命令行永远验不了死活**，只能开浏览器。
 - [x] 在真实嵌入环境里点「开始行动」进入 `playing`，两名队友在场
 - [x] 指针锁定被拒时自动降级，右键转视角、左键开火，提示条正常显示
 - [ ] 完整打一局到结算页（需要人工玩一遍）

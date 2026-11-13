@@ -230,6 +230,7 @@ if (data.host) {
     if (response.status === 401 || response.status === 403) {
       // protected / private 空间不对匿名请求开放；已确认在线的公开空间用 curl 同样是 403，
       // 所以这里不是"没起来"，验收必须在带登录态的浏览器里做。
+      // 平台在响应体里会给出 API 专用地址，但那个地址同样要令牌（匿名 401），别拿它当探针。
       log(`直链自检：HTTP ${response.status}（${data.visibility || VISIBILITY} 空间拒绝匿名访问，属正常）`);
       log('          请用浏览器登录后打开空间页验收，不要用 curl 判断死活。');
     } else {
